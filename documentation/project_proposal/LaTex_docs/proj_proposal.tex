@@ -14,6 +14,10 @@
 
 \usepackage[acronym]{glossaries} % for better handling of acronyms
 
+\usepackage{pgfgantt} % gantt chart
+
+\raggedbottom
+
 %% Example acronyms used in this document. 
 \newacronym{hci}{HCI}{Human-Computer Interaction}
 \newacronym{acm}{ACM}{Association for Computing Machinery}
@@ -105,75 +109,151 @@
 	
 	\section{Proposed Solution}
 	
-	In this section you will explain how you plan to solve the problem, that is, how you intend to carry the project out. At this early stage you need to be both clear about what you are going to do and flexible enough to adapt to changing circumstances. Making an early plan will not prevent you from running into trouble, but it will help you identify possible problems early. For example, if you intended to run an experiment in \gls{hci}, you might realise early on that there would be problems gathering sufficient data to get reliable results, and that you should re-design your experiment.
+	The project will be implemented as a web-based multiplayer system that integrates game logic, interactive mapping, and a responsive user interface. The system will follow a client–server architecture where the backend manages the game state and enforces the rules of Scotland Yard, while the frontend provides an interactive interface for players within a web browser.
 	
-	Part of the planning process involves producing a timetable for when
-	the work is actually going to be done.
+	The backend will implement the core game engine, including player roles, turn management, movement rules, ticket usage, and win conditions. It will also manage game sessions and synchronise actions between players using real-time communication technologies. This ensures that all players share a consistent game state and that the rules of the game are enforced automatically.
 	
-	Each part of the project should produce some output. For example you
-	might plan on spending two weeks on background reading: the output of
-	this will be a bibliography, and a possibly a literature survey for
-	your report. Indeed, if you take the advice given above about having
-	specific, measurable goals, you should describe this part of your
-	project as:
+	The frontend will be responsible for presenting the game visually and allowing players to interact with it. An interactive map API will be used to display the Wellington region as the game board, with game locations mapped to nodes on the map. The interface will allow players to view available moves, select transport options, and track the progress of the game. Particular attention will be given to designing a clear and responsive user interface so that players can easily understand the game state and perform actions.
 	
-	\begin{description}
-		\item[Good] Produce bibliography (est: 2 weeks)
-	\end{description}
-	rather than
-	\begin{description}
-		\item[\bf Bad] Background reading (est: 2 weeks)
-	\end{description}
+	The development process will proceed iteratively. Initial stages will focus on designing the system architecture, selecting appropriate technologies, and producing UI prototypes. Implementation will then focus on the core game logic, followed by integration with the map interface and multiplayer communication features. Subsequent stages will refine the system through testing, usability improvements, and deployment preparation.
 	
-	Note that the methodology you outline here is dependent upon the type
-	of project and engineering area. You must talk to your supervisor
-	about this.
+	The project will be carried out over a 24-week period and will follow an iterative development process with clearly defined milestones. Early stages will focus on planning and design to reduce technical risk before implementation begins.
+	
+	Project planning and design (Weeks 5–9).
+	Define system requirements and architecture, select a suitable map API, and design the overall system structure. Produce frontend interface designs and backend architecture diagrams describing the game logic, multiplayer communication, and data flow.
+	Output: system architecture diagrams, UI mockups, and technology selection documentation.
+	
+	Core implementation (Weeks 9–15).
+	Implement the backend game engine that enforces Scotland Yard rules, manages game sessions, and handles multiplayer communication. Develop the browser-based frontend and integrate the mapping API to render the Wellington map and player movement.
+	Output: a working prototype supporting multiplayer gameplay and map-based interaction.
+	
+	Testing and evaluation (Weeks 15–18).
+	Perform functional testing of game rules, test multiplayer synchronisation and performance, and conduct user testing to evaluate usability and gameplay experience.
+	Output: test results and evaluation report.
+	
+	Refinement and deployment (Weeks 18–24).
+	Improve the interface, optimise performance, and deploy the system with appropriate hosting and infrastructure.
+	Output: final deployed system and completed project report.
+	
+	
+	\resizebox{\textwidth}{!}{
+		\begin{ganttchart}[
+			y unit title=0.7cm,
+			y unit chart=0.6cm,
+			vgrid,
+			hgrid
+			]{1}{24}
+			
+			\gantttitle{Project Timeline (Weeks)}{24} \\
+			\gantttitlelist{1,...,24}{1} \\
+			
+			\ganttgroup{Planning}{5}{9} \\
+			\ganttbar{Project planning}{5}{6} \\
+			\ganttbar{System architecture design}{6}{8} \\
+			\ganttbar{UI design and prototyping}{6}{9} \\
+			\ganttbar{Map API selection}{7}{9} \\
+			
+			\ganttgroup{Development}{9}{15} \\
+			\ganttbar{Backend game logic implementation}{9}{13} \\
+			\ganttbar{Frontend development}{10}{14} \\
+			\ganttbar{Map API integration}{11}{14} \\
+			\ganttbar{Working multiplayer prototype}{14}{15} \\
+			
+			\ganttgroup{Testing and Evaluation}{15}{18} \\
+			\ganttbar{Functional testing}{15}{17} \\
+			\ganttbar{User testing and evaluation}{17}{18} \\
+			
+			\ganttgroup{Refinement and Deployment}{18}{24} \\
+			\ganttbar{System improvements and optimisation}{18}{22} \\
+			\ganttbar{Hosting and infrastructure setup}{20}{23} \\
+			\ganttbar{Final report and documentation}{21}{24}
+			
+		\end{ganttchart}
+	}
+	
+	There is two two week mid trimester breaks and one five week trimester break that I could use to catch up if I'm behind at any point.
 	
 	\section{Evaluating your Solution}
 	
-	In this section you will explain how you will evaluate your solution
-	once you have built it. The method of evaluation will be domain
-	specific. Your supervisor should provide guidance as to what is an
-	appropriate form of evaluation. For example, user testing for a \gls{hci} project or performance measurement for a Network Engineering project.
+	The completed system will be evaluated using a combination of automated testing, performance testing, and user evaluation. These approaches will assess the correctness of the implementation, the reliability of the multiplayer system, and the usability of the interface.
 	
-	\section{Resourcing and Ethics}
+	Unit testing will be used to verify the correctness of the backend game logic. Individual components such as player movement, ticket usage, turn management, and win conditions will be tested in isolation to ensure they behave as expected. Automated tests will confirm that invalid moves are rejected and that the game state remains consistent after each action.
 	
-	In this section you will detail any resource requirements such as hardware, software or access. You should address each of these points, even if only to indicate that they are not of particular concern to your project.
+	Integration testing will evaluate how different system components interact, particularly the communication between the frontend, backend, and mapping API. These tests will ensure that player actions are correctly transmitted to the server, processed by the game engine, and synchronised across all connected clients.
 	
+	Functional testing will validate that the full gameplay experience follows the rules of Scotland Yard. Test scenarios will simulate different game situations to confirm that movement rules, hidden player mechanics, ticket restrictions, and win conditions are implemented correctly.
 	
+	Performance testing will evaluate the responsiveness and stability of the multiplayer system. This will involve measuring the latency of game updates, testing synchronisation between multiple clients, and verifying that the server can maintain a consistent game state under concurrent player interactions.
+	
+	User evaluation will be conducted to assess usability and gameplay experience. Participants will play the game using the browser interface and provide feedback through the System Usability Scale (SUS) questionnaire, a widely used standardised usability metric. Additional qualitative feedback will be collected to identify interface issues, clarity of game information, and overall user satisfaction. The results will be used to guide improvements to the user interface and interaction design.
+	
+	Together, these evaluation methods will demonstrate that the system correctly implements the game rules, performs reliably in a multiplayer environment, and provides an effective and usable gameplay experience.
+	
+	\section{Resourcing and Ethics}	
 	\subsection{Hardware}
 	
 	There aren't many hardware needs for this project. The main thing other than a laptop would be a server to host the project once its completed. I have a home server that I'm planning to host this on permanently once its finished so theres no extra costs.
 	
 	\subsection{Software, Datasets and Models}
+		
+	The specialised software and resources planned for this project include:
 	
-	Discuss the specialised software (applications, compilers, libraries, development kits, simulators, solvers, etc) to be used. You need not include common desktop software such as browsers, office applications, IDEs, and editors. This is also the place to mention datasets and models that you plan to use. 
+	\begin{itemize}
+		\item \textbf{Frontend framework:} Vue.js or React.js for building the user interface
+		\item \textbf{Mapping API:} for rendering the Wellington region and game locations
+		\item \textbf{Backend language:} Java or JavaScript for implementing game logic and multiplayer communication
+		\item \textbf{Deployment and infrastructure:}
+		\begin{itemize}
+			\item Home server hosting
+			\item Proxmox for virtualisation
+			\item Docker for containerised deployment
+			\item Cloudflare for secure external access
+		\end{itemize}
+	\end{itemize}
 	
 	\subsection{Space, Virtual Resources and Access}
 	
-	Discuss the space (for instance labs or specialised rooms, outdoor fields) and resources that can be accessed virtually (for instance computing grid, virtual machines, network testbeds) that your project will use, and how you plan to obtain access them. 
+	The project will make use of both physical and virtual resources to support development, testing, and deployment:
+	
+	\begin{itemize}
+		\item \textbf{Physical resources:}
+		\begin{itemize}
+			\item Home workspace for development and testing
+			\item Personal computer and network access for local multiplayer testing
+		\end{itemize}
+		
+		\item \textbf{Virtual resources:}
+		\begin{itemize}
+			\item Virtual machines hosted on Proxmox to isolate backend and frontend services
+			\item Docker containers for deploying the application in a controlled environment
+			\item Cloudflare services for external network access and testing
+			\item Online mapping API services to provide geographic data and map rendering
+		\end{itemize}
+	\end{itemize}
+	
+	Access to these resources will be through personal equipment and accounts, with virtualised environments configured on the home server. This setup allows for controlled testing of multiplayer interactions, deployment scenarios, and integration with external services while avoiding the need for specialised labs or external facilities.
 	
 	\subsection{Budget}
 	
-	Provide an estimate of the budget for the project. If the budget is more than \$500 you should indicate any sources of funding outside the normal ENGR 489 budget. The purchase of special tools or software etc. may not need to be included in your \$500 limit, however, if something is necessary for your project you should definitely list it here.
+	\begin{itemize}
+		\item Physical Scotland Yard boardgame (for reference and testing) supervisor already ordered: \$80
+		\item Claude Code subscription (1 year, for code assistance) approved by supervisor: \$400
+		\item Domain name for the website: \$10
+		\item Google Maps API: free for the first 10,000 calls which should be enough; \$7 per additional 1,000 calls
+	\end{itemize}
 	
-	Do not pad the budget to get it up to \$500.
-	
-	My supervisor already ordered the physical boardgame which cost \$80
-	I also want a claude code subscription for the year which cost \$400.
-		
+	Total: \$490
 	
 	\subsection{Ethics}
 	
-	No extra ethical considerations. Testing will done primarily through software and the user testing will be done among students.
+	No additional ethical considerations are anticipated. Testing will be conducted primarily through software-based methods, and any user testing will be carried out with voluntary participation from students.
 	
 	\subsection{Safety}
 	
-	The standard stuff to do with working with computers like eye strain, sitting for long periods of time and wrist pain.
-	
+	Standard safety precautions for computer-based work will be observed, including managing eye strain, taking regular breaks to avoid prolonged sitting, and maintaining ergonomic posture to reduce the risk of wrist or back discomfort.
 	
 	\subsection{Intellectual Property}
 	
-	IP will be mine but the university will have permission to use it for open day and advertisements.
+	Intellectual property resulting from this project will be owned by the author, Mingzhe Bao. The university will retain permission to use the project materials for promotional purposes, such as Open Day events or advertising.
 	
 \end{document}
