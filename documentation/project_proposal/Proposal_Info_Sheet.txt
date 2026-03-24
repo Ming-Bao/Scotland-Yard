@@ -1,0 +1,44 @@
+## ENGR489 Proposal Information Sheet
+## - Please fill up this proposal and upload it to the ECS Submission System
+##   when you submit your proposal. You MUST submit this file.
+## - You should name it [Username]_Proposal_Info_Sheet.txt where [Username]
+##   is your ECS username.
+## - Fill up this sheet after you have completed your proposal.
+
+
+## You can use LaTeX notation for denoting mathematical symbols (must be enclosed in $)
+## or diacritical marks (e.g. accents).
+## Examples:
+## 1) The Greek small letter delta: $delta$
+## 2) The quadratic equation: $f(x) = ax^2 + bx + c$
+## 3) Macron accent on the letter a: \={a}
+## 4) Umlaut or dieresis on the letter a: \"{a}
+
+
+# Title of your project
+TITLE: Scotland Yard Multiplayer Game as Map Overlay
+
+
+# List of supervisors separated by comma. First in the list is primary supervisor
+# Add/remove as necessary
+SUPERVISORS: Jens Dietrich, Stuart Marshall
+
+
+# Provide a meaningful abstract here. Just copy from your proposal. 
+ABSTRACT-BEGIN:
+	This project develops a web-based multiplayer version of Scotland Yard overlaid on a real-world map of the Wellington region. Physical gameplay limits accessibility, and existing digital versions lack local geographic integration. The system will implement core game logic and user interface components within a browser environment, integrating real-time multiplayer communication and interactive mapping technologies to support location-based gameplay. The expected outcome is a functional online platform that enables synchronous play, enforces game rules automatically, and visualises movement across the Wellington map. The project will be evaluated through functional testing of game mechanics, performance testing of multiplayer interactions, and user testing to assess usability and overall gameplay experience. The completed system will also be suitable for demonstration at university Open Day events and for promotional use, showcasing the level of programming skills that can be achieved through interactive gameplay.
+ABSTRACT-END
+
+
+# List all potential outputs or artefacts of your project (separated by comma).
+# Example artefacts: Hardware, Software, Firmware, Algorithm, Model, Experimental Results
+EXPECTED-ARTEFACTS: Software
+
+
+# Budget requested (in NZD)
+BUDGET: 294
+
+- Physical Scotland Yard boardgame (for reference and testing) supervisor already ordered: $80
+- Claude Code subscription 6 months approved by supervisor: $204
+- Domain name for the website: $10
+- Some mapping API, the ideal is to find a free api but there could potentually be a cost here. This cost is not included in the above budger request.

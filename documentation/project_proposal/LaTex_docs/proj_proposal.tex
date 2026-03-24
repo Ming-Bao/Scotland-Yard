@@ -71,7 +71,7 @@
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	
 	\begin{abstract}
-		This project develops a web-based multiplayer version of Scotland Yard overlaid on a real-world map of the Wellington region. Physical gameplay limits accessibility, and existing digital versions lack local geographic integration. The system will implement core game logic and user interface components within a browser environment, integrating real-time multiplayer communication and interactive mapping technologies to support location-based gameplay. The expected outcome is a functional online platform that enables synchronous play, enforces game rules automatically, and visualises movement across the Wellington map. The project will be evaluated through functional testing of game mechanics, performance testing of multiplayer interactions, and user testing to assess usability and overall gameplay experience.
+	This project develops a web-based multiplayer version of Scotland Yard overlaid on a real-world map of the Wellington region. Physical gameplay limits accessibility, and existing digital versions lack local geographic integration. The system will implement core game logic and user interface components within a browser environment, integrating real-time multiplayer communication and interactive mapping technologies to support location-based gameplay. The expected outcome is a functional online platform that enables synchronous play, enforces game rules automatically, and visualises movement across the Wellington map. The project will be evaluated through functional testing of game mechanics, performance testing of multiplayer interactions, and user testing to assess usability and overall gameplay experience. The completed system will also be suitable for demonstration at university Open Day events and for promotional use, showcasing the level of programming skills that can be achieved through interactive gameplay.
 	\end{abstract}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,19 +94,17 @@
 	
 	Many board games are limited by physical components and the need for players to be in the same location. Scotland Yard, a hidden-movement strategy game based on movement across a map, is well suited to a digital implementation but most existing versions simply replicate the original board and do not use modern web or mapping technologies.
 	
-	This project aims to implement a web-based multiplayer version of Scotland Yard that overlays game logic and user interface elements onto a real-world map of the Wellington region using a map API. A browser-based frontend will provide an interactive interface for players, while a backend service will manage game state, enforce rules, and synchronise player actions in real time.
+	This project aims to implement a web-based multiplayer version of Scotland Yard that overlays game logic and user interface elements onto a real-world map of the Wellington region using a map API. A browser-based frontend will provide an interactive interface for players, while a backend service will manage game state, enforce rules, and synchronise player actions in real time. The system is also intended to be suitable for demonstration in university Open Day events and promotional settings, showcasing interactive web technologies and real-time multiplayer system design.
 	
 	The system will be evaluated through functional testing of the game mechanics, performance testing of multiplayer interactions, and user testing to assess usability and gameplay experience. The project will primarily require software resources including web development frameworks, mapping APIs, and networking tools for real-time communication.
-
 	
 	\section{The Problem}
 	
 	Board games such as Scotland Yard are traditionally limited to physical play, requiring co-located participants and a fixed board layout. Although digital versions exist, they typically replicate the original board and do not integrate real-world geographic data or modern web-based multiplayer capabilities. There is an opportunity to extend the game into a location-aware, browser-based platform that combines structured game logic with interactive mapping and contemporary user interface design.
-
-	The engineering problem is to implement a web-based multiplayer system that enforces the rules of Scotland Yard while overlaying gameplay onto a real-world map of the Wellington region using an API from some map. This requires integrating turn-based game logic, real-time client–server communication, geographic data processing, and a responsive, intuitive frontend. The system must synchronise player actions reliably, ensure fairness through programmatic rule enforcement, and present clear visual feedback through effective interface design.
 	
-	The aim of this project is to implement and evaluate an online multiplayer version of Scotland Yard that runs entirely in a web browser, uses a map API to render Wellington as the game board, provides a well-designed frontend for interaction and visualisation, and supports real-time multiplayer gameplay. The project will demonstrate correctness of game mechanics, robustness of multiplayer synchronisation, and usability through structured testing and user evaluation.
+	The engineering problem is to implement a web-based multiplayer system that enforces the rules of Scotland Yard while overlaying gameplay onto a real-world map of the Wellington region using an API from a mapping service. This requires integrating turn-based game logic, real-time client--server communication, geographic data processing, and a responsive, intuitive frontend. The system must synchronise player actions reliably, ensure fairness through programmatic rule enforcement, and present clear visual feedback through effective interface design. In addition, the system should be robust and intuitive enough to be demonstrated to a general audience during Open Day events and used as part of university promotional activities.
 	
+	The aim of this project is to implement and evaluate an online multiplayer version of Scotland Yard that runs entirely in a web browser, uses a map API to render Wellington as the game board, provides a well-designed frontend for interaction and visualisation, and supports real-time multiplayer gameplay. The project will demonstrate correctness of game mechanics, robustness of multiplayer synchronisation, usability through structured testing and user evaluation, and suitability for public demonstration.
 	\section{Proposed Solution}
 	
 	The project will be implemented as a web-based multiplayer system that integrates game logic, interactive mapping, and a responsive user interface. The system will follow a client–server architecture where the backend manages the game state and enforces the rules of Scotland Yard, while the frontend provides an interactive interface for players within a web browser.
@@ -179,7 +177,11 @@
 	
 	Unit testing will be used to verify the correctness of the backend game logic. Individual components such as player movement, ticket usage, turn management, and win conditions will be tested in isolation to ensure they behave as expected. Automated tests will confirm that invalid moves are rejected and that the game state remains consistent after each action.
 	
-	Integration testing will evaluate how different system components interact, particularly the communication between the frontend, backend, and mapping API. These tests will ensure that player actions are correctly transmitted to the server, processed by the game engine, and synchronised across all connected clients.
+	Mock testing will be used to simulate external dependencies such as the mapping API and network responses. This allows testing of edge cases and failure scenarios without relying on external services.
+	
+	Lifecycle testing will evaluate the system across the full game lifecycle, including game creation, player joining, gameplay progression, and game termination, ensuring stability and correctness throughout.
+
+	Integration testing will evaluate how different system components interact, particularly the communication between the frontend, backend, and mapping API. These tests will ensure that player actions are correctly transmitted to the server, processed by the game engine, and synchronised across all connected clients. Currently there are no plans to automate this but automation could be considered in the future.
 	
 	Functional testing will validate that the full gameplay experience follows the rules of Scotland Yard. Test scenarios will simulate different game situations to confirm that movement rules, hidden player mechanics, ticket restrictions, and win conditions are implemented correctly.
 	
@@ -204,10 +206,10 @@
 		\item \textbf{Backend language:} Java or JavaScript for implementing game logic and multiplayer communication
 		\item \textbf{Deployment and infrastructure:}
 		\begin{itemize}
-			\item Home server hosting
-			\item Proxmox for virtualisation
-			\item Docker for containerised deployment
-			\item Cloudflare for secure external access
+			\item \textbf{Hosting hardware:} A physical device for deployment, using a personal home server
+			\item \textbf{Container hosting platform:} Virtualisation or cloud platforms such as Proxmox, AWS, or Azure
+			\item \textbf{Containerisation:} Docker for packaging and deploying application components
+			\item \textbf{Networking and security:} Cloudflare for HTTPS and secure external access
 		\end{itemize}
 	\end{itemize}
 	
@@ -237,16 +239,16 @@
 	
 	\begin{itemize}
 		\item Physical Scotland Yard boardgame (for reference and testing) supervisor already ordered: \$80
-		\item Claude Code subscription (1 year, for code assistance) approved by supervisor: \$400
+		\item Claude Code subscription 6 months approved by supervisor: \$204
 		\item Domain name for the website: \$10
-		\item Google Maps API: free for the first 10,000 calls which should be enough; \$7 per additional 1,000 calls
+		\item Some mapping API, the ideal is to find a free api but there could potentually be a cost here.
 	\end{itemize}
 	
-	Total: \$490
+	Total: \$294
 	
 	\subsection{Ethics}
 	
-	No additional ethical considerations are anticipated. Testing will be conducted primarily through software-based methods, and any user testing will be carried out with voluntary participation from students.
+	No additional ethical considerations are anticipated. Testing will be conducted primarily through software-based methods, and any user testing will be carried out with voluntary participation from students. Ethics for testing on fellow students has been approved by the course coordinator already.
 	
 	\subsection{Safety}
 	
@@ -254,6 +256,8 @@
 	
 	\subsection{Intellectual Property}
 	
-	Intellectual property resulting from this project will be owned by the author, Mingzhe Bao. The university will retain permission to use the project materials for promotional purposes, such as Open Day events or advertising.
+	Intellectual property resulting from this project will be owned by the author, Mingzhe Bao. The university will retain permission to use the project materials for promotional purposes, including Open Day events and advertising.
+	
+	Permission will be sought from Ravensburger to use the \textit{Scotland Yard} intellectual property as the basis for this project. If permission is not granted, the project will be adapted to use an original theme and modified game elements that preserve the core mechanics while avoiding the use of protected intellectual property.
 	
 \end{document}
