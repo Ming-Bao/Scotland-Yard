@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2026/dev/Arch Linux) (preloaded format=pdflatex 2026.3.4)  19 MAR 2026 09:18
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2026/dev/Arch Linux) (preloaded format=pdflatex 2026.3.4)  26 MAR 2026 23:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -720,7 +720,7 @@ File: ot1zplm.fd 2002/09/08 Fontinst v1.914 font definitions for OT1/zplm.
 /enc/dvips/base/8r.enc} <./VUW_Standard_Landscape_BLACK.pdf>]
 
 [0]
-Overfull \hbox (22.36899pt too wide) in paragraph at lines 110--111
+Overfull \hbox (22.36899pt too wide) in paragraph at lines 111--112
 \OT1/ppl/m/n/10.95 logic, in-ter-ac-tive map-ping, and a re-spon-sive user in-t
 er-face. The sys-tem will fol-low a client{server
  []
@@ -736,14 +736,16 @@ er-face. The sys-tem will fol-low a client{server
 
 [3]
 LaTeX Font Info:    Trying to load font information for TS1+ppl on input line 2
-04.
+09.
  (/usr/share/texmf-dist/tex/latex/psnfss/ts1ppl.fd
 File: ts1ppl.fd 2001/06/04 font definitions for TS1/ppl.
 )
 
 [4]
 
-[5] (./proj_proposal.aux)
+[5]
+
+[6] (./proj_proposal.aux)
  ***********
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
@@ -761,10 +763,10 @@ Here is how much of TeX's memory you used:
 dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texmf-dist/fonts/type1/urw
 /palatino/uplb8a.pfb></usr/share/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb
 ></usr/share/texmf-dist/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on proj_proposal.pdf (7 pages, 90598 bytes).
+Output written on proj_proposal.pdf (8 pages, 92159 bytes).
 PDF statistics:
- 60 PDF objects out of 1000 (max. 8388607)
- 39 compressed objects within 1 object stream
+ 63 PDF objects out of 1000 (max. 8388607)
+ 41 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  18 words of extra memory for PDF output out of 10000 (max. 10000000)
 
