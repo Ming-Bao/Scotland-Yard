@@ -58,7 +58,7 @@ flowchart TD
     B2 --> B
     C -- ok --> D[Render reachable nodes on map]
     D --> E[Mr. X selects node]
-    E --> F{Ticket check\nlocal state}
+    E --> F{Ticket check}
     F -- taxi available --> G1[Use taxi ticket]
     F -- bus available --> G2[Use bus ticket]
     F -- underground available --> G3[Use underground ticket]
@@ -79,10 +79,9 @@ flowchart TD
 ``` mermaid
 flowchart TD
     A([Detective turn starts]) --> A1[GET /game/detectives\nfetch all positions]
-    A1 --> B[i = 0, first detective]
-    B --> C[GET /game/moves?player=i\nvalid moves for detective i]
-    C --> D{Has valid moves?}
-    D -- no moves / no tickets --> E[Detective i skips\nPATCH /game/skip]
+    A1 --> B[wait for backend signal]
+    B --> D{Has valid moves?}
+    D -- no moves / no tickets --> E[Detective skips]
     D -- moves available --> F[Highlight reachable nodes on map]
     F --> G[Detective selects node]
     G --> H{Ticket check}
@@ -94,10 +93,10 @@ flowchart TD
     J --> K{Catch check\nserver-side}
     K -- detective node == Mr. X node --> L[POST /game/caught\nbroadcast win]
     L --> M([Detectives win!])
-    K -- no catch --> N{Turn check\ni < num_detectives?}
+    K -- no catch --> N{Turn check\nhas all detectives gone?}
     E --> N
-    N -- yes: i++ --> C
-    N -- no: all moved --> O[PATCH /game/round\nincrement round]
+    N -- no: next detective --> B
+    N -- yes --> O[increment round]
     O --> P{Round limit check}
     P -- round == 24 --> Q([Mr. X wins!])
     P -- round < 24 --> R([Next Mr. X turn])
