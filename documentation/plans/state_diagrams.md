@@ -102,3 +102,119 @@ flowchart TD
     P -- round < 24 --> R([Next Mr. X turn])
   
 ```
+
+---
+
+### Backend flow chart
+
+```mermaid
+stateDiagram-v2
+    direction TB
+
+    [*] --> Idle
+
+    Idle --> Initialising : start game request received
+
+    state Initialising {
+        [*] --> CreatingGame
+        CreatingGame --> DealingTickets : instantiate Lobby object
+        DealingTickets --> AssigningPositions : "set Mr. X black=5 double=2<br/>detective ticket counts in Player objects"
+        AssigningPositions --> BroadcastingStart : set starting positions in Player objects
+        BroadcastingStart --> [*] : WS broadcast GAME_STARTED
+    }
+
+    Initialising --> RoundStart : "initialisation complete, round = 1"
+
+    state RoundStart {
+        [*] --> CheckReveal
+        CheckReveal --> BroadcastReveal : round in 3,8,13,18,24
+        CheckReveal --> [*] : hidden round, skip
+        BroadcastReveal --> [*] : "read mrX.position from Lobby<br/>WS broadcast MRX_REVEALED"
+    }
+
+    RoundStart --> AwaitingMrXMove : reveal check done
+
+    state AwaitingMrXMove {
+        [*] --> ComputingValidMoves
+        ComputingValidMoves --> ReadyForInput : "traverse adjacency graph<br/>no ticket constraint for taxi, bus, ug"
+        ReadyForInput --> ValidatingMove : move request received
+        ValidatingMove --> ValidatingMove : node not in validMoves, reject
+        ValidatingMove --> ApplyingMove : node reachable, accept
+
+        state ApplyingMove {
+            [*] --> CheckingTicketType
+            CheckingTicketType --> DecrementBlack : transport == BLACK
+            CheckingTicketType --> DecrementDouble : transport == DOUBLE
+            CheckingTicketType --> UpdatePosition : "transport == TAXI, BUS or UG<br/>no change to ticket fields"
+            DecrementBlack --> UpdatePosition : mrX.blackTickets--
+            DecrementDouble --> UpdatePosition : "mrX.doubleTickets--<br/>set doubleMovePending = true"
+            UpdatePosition --> [*] : mrX.position = destNode
+        }
+
+        ApplyingMove --> BroadcastingTransport : move applied
+        BroadcastingTransport --> [*] : "WS broadcast TRANSPORT_USED<br/>position withheld from detectives"
+    }
+
+    AwaitingMrXMove --> DoubleMovePending : doubleMovePending == true
+    DoubleMovePending --> AwaitingMrXMove : "second move, set doubleMovePending = false"
+
+    AwaitingMrXMove --> AwaitingDetectiveMoves : single move complete
+
+    state AwaitingDetectiveMoves {
+        [*] --> NextDetective
+        NextDetective --> ComputingDetMoves : "traverse adjacency graph<br/>filter by detective ticket counts"
+        ComputingDetMoves --> DetReadyForInput : validMoves list returned
+        ComputingDetMoves --> DetSkipped : "validMoves empty<br/>set detective.skipped = true"
+        DetReadyForInput --> ValidatingDetMove : move request received
+        ValidatingDetMove --> ValidatingDetMove : node not in validMoves, reject
+        ValidatingDetMove --> ApplyingDetMove : valid, accept
+        ApplyingDetMove --> DecrementDetTicket : detective.position = destNode
+        DecrementDetTicket --> RunningCatchCheck : detective.tickets[transport]--
+
+        state RunningCatchCheck {
+            [*] --> ComparingNodes
+            ComparingNodes --> CatchConfirmed : detective.position == mrX.position
+            ComparingNodes --> NoCatch : positions differ
+        }
+
+        RunningCatchCheck --> BroadcastDetMove : "no catch<br/>WS broadcast detective moved"
+        BroadcastDetMove --> DetSkipped
+        DetSkipped --> NextDetective : detectives iterator has next
+        DetSkipped --> [*] : all detectives done
+        RunningCatchCheck --> DetectivesWin : catch confirmed
+    }
+
+    AwaitingDetectiveMoves --> DetectivesWin : catch confirmed mid-turn
+    AwaitingDetectiveMoves --> RoundEnd : all detectives moved
+
+    state RoundEnd {
+        [*] --> IncrementingRound
+        IncrementingRound --> CheckingRoundLimit : lobby.round++
+        CheckingRoundLimit --> MrXWins : round > 24
+        CheckingRoundLimit --> [*] : round <= 24, continue
+    }
+
+    RoundEnd --> MrXWins : round limit reached
+    RoundEnd --> RoundStart : next round begins
+
+    state DetectivesWin {
+        [*] --> BroadcastingDetWin
+        BroadcastingDetWin --> [*] : "set lobby.result = DETECTIVES_WIN<br/>WS broadcast DETECTIVES_WIN"
+    }
+
+    state MrXWins {
+        [*] --> BroadcastingMrXWin
+        BroadcastingMrXWin --> [*] : "set lobby.result = MRX_WINS<br/>WS broadcast MRX_WINS"
+    }
+
+    DetectivesWin --> LobbyOver
+    MrXWins --> LobbyOver
+
+    state LobbyOver {
+        [*] --> CleaningUp
+        CleaningUp --> [*] : "close WS sessions<br/>nullify Lobby object"
+    }
+
+    LobbyOver --> [*]
+```
+
