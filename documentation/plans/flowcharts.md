@@ -6,39 +6,18 @@ stateDiagram-v2
     direction TB
 
     [*] --> Lobby
-    Lobby --> Setup : all players ready
+    Lobby --> Setup
     Setup --> MrXTurn
 
-    state MrXTurn {
-        [*] --> SelectMove
-        SelectMove --> ValidateTicket : node chosen
-        ValidateTicket --> SubmitMove : ticket available
-        ValidateTicket --> SelectMove : no ticket
-        SubmitMove --> LogTransport
-        LogTransport --> [*]
-    }
-
-    state DetTurn {
-        [*] --> NextDetective
-        NextDetective --> DetSelectMove
-        DetSelectMove --> DetValidateTicket : node chosen
-        DetValidateTicket --> DetSubmitMove : ticket ok
-        DetValidateTicket --> DetSelectMove : no ticket / blocked
-        DetSubmitMove --> CatchCheck
-        
-        CatchCheck --> NextDetective : more detectives
-        CatchCheck --> RoundEnd : all moved
-        
-        RoundEnd --> TurnCheck
-        TurnCheck --> NextDetective : round 24 not reached
-    }
-
-    MrXTurn --> RevealCheck : move logged
-    RevealCheck --> DetTurn : hidden
-    RevealCheck --> DetTurn : reveal
+	MrXTurn --> DetectiveTurn
+	DetectiveTurn --> CatchCheck
+	
+	CatchCheck --> DetectivesWin : on Mr. X node
+	CatchCheck --> TurnCheck
     
     TurnCheck --> MrXWins : round 24 reached
-	CatchCheck --> DetectivesWin : on Mr. X node
+    TurnCheck --> MrXTurn : round 24 not reached
+	
     DetectivesWin --> [*]
     MrXWins --> [*]
 ```
