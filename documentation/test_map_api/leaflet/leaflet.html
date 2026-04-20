@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wellington Scotland Yard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 100vh; width: 100vw; background: #000; }
+        body { margin: 0; padding: 0; }
+        .pie-node { border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 12px #000; z-index: 1000 !important; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+
+    <script>
+        const map = L.map('map').setView([-41.288, 174.777], 15);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+
+        const COLORS = { scooter: '#00b4d8', bus: '#f77f00', train: '#c1121f' };
+        // turf.lineOffset: positive = right of travel direction.
+        // After normalizePath (S→N or W→E), right ≈ east → bus always on eastern/right side.
+        const MODE_OFFSET_M = { scooter: -15, train: 0, bus: 15 };
+
+        const NODES = [
+            { id: 'vuw',      label: 'VUW Kelburn',               lat: -41.2866, lng: 174.7685, modes: ['scooter', 'bus'] },
+            { id: 'station',  label: 'Wellington Railway Station', lat: -41.2786, lng: 174.7798, modes: ['bus', 'train'] },
+            { id: 'tepapa',   label: 'Te Papa Tongarewa',          lat: -41.2906, lng: 174.7824, modes: ['scooter', 'bus', 'train'] },
+            { id: 'courtney', label: 'Courtney Place',             lat: -41.2952, lng: 174.7788, modes: ['scooter', 'bus'] },
+        ];
+
+        const EDGES = [
+            { a: 'vuw',      b: 'station',  modes: ['bus'] },
+            { a: 'tepapa',   b: 'courtney', modes: ['scooter', 'bus'] },
+            { a: 'courtney', b: 'vuw',      modes: ['scooter', 'bus'] },
+            { a: 'station',  b: 'tepapa',   modes: ['bus', 'train'] },
+        ];
+
+        // ── Graph (segment-endpoint) ───────────────────────────────────────────────
+        // Each OSM LineString contributes one edge between its start and end endpoints,
+        // storing the full intermediate geometry. ~10× fewer vertices than per-coordinate
+        // graphs so A* routes directly between intersections without dead-end detours.
+
+        function coordKey([lng, lat]) {
+            return `${lng.toFixed(4)},${lat.toFixed(4)}`;
+        }
+
+        function buildGraph(features) {
+            const graph = new Map();      // key → Map<neighborKey, [lng,lat][]>
+            const coordStore = new Map(); // key → [lng, lat] full precision
+
+            for (const f of features) {
+                const cs = f.geometry.coordinates;
+                if (cs.length < 2) continue;
+                const aKey = coordKey(cs[0]);
+                const bKey = coordKey(cs[cs.length - 1]);
+                if (aKey === bKey) continue;
+
+                if (!graph.has(aKey)) { graph.set(aKey, new Map()); coordStore.set(aKey, cs[0]); }
+                if (!graph.has(bKey)) { graph.set(bKey, new Map()); coordStore.set(bKey, cs[cs.length - 1]); }
+
+                if (!graph.get(aKey).has(bKey)) {
+                    graph.get(aKey).set(bKey, cs);
+                    graph.get(bKey).set(aKey, cs);
+                }
+            }
+            return { graph, coordStore };
+        }
+
+        // Snap a game node onto the nearest point of any road segment, then wire it
+        // into the graph as a virtual vertex connected to both endpoints of that segment.
+        function snapNodeToGraph(roadFeatures, graph, coordStore, lat, lng) {
+            const pt = turf.point([lng, lat]);
+            let bestDist = Infinity, bestRoad = null, bestSnapped = null;
+
+            for (const f of roadFeatures) {
+                const snapped = turf.nearestPointOnLine(f, pt, { units: 'kilometers' });
+                if (snapped.properties.dist < bestDist) {
+                    bestDist = snapped.properties.dist;
+                    bestRoad = f;
+                    bestSnapped = snapped;
+                }
+            }
+
+            if (!bestRoad) return null;
+
+            const cs = bestRoad.geometry.coordinates;
+            const idx = bestSnapped.properties.index;
+            const snap = bestSnapped.geometry.coordinates; // [lng, lat]
+            const snapKey = `snap:${snap[0].toFixed(6)},${snap[1].toFixed(6)}`;
+
+            if (!graph.has(snapKey)) {
+                coordStore.set(snapKey, snap);
+                graph.set(snapKey, new Map());
+
+                const aKey = coordKey(cs[0]);
+                const bKey = coordKey(cs[cs.length - 1]);
+
+                if (graph.has(aKey)) {
+                    const snapToA = [snap, ...cs.slice(0, idx + 1).reverse()];
+                    graph.get(snapKey).set(aKey, snapToA);
+                    graph.get(aKey).set(snapKey, [...snapToA].reverse());
+                }
+                if (idx + 1 < cs.length && graph.has(bKey)) {
+                    const snapToB = [snap, ...cs.slice(idx + 1)];
+                    graph.get(snapKey).set(bKey, snapToB);
+                    graph.get(bKey).set(snapKey, [...snapToB].reverse());
+                }
+            }
+
+            return { key: snapKey, coord: snap };
+        }
+
+        // A* with actual Euclidean distance — consistent heuristic, closed set prevents loops.
+        function aStar(graph, coordStore, startKey, endKey) {
+            if (startKey === endKey) return [startKey];
+            const [endLng, endLat] = coordStore.get(endKey);
+            const gScore = new Map([[startKey, 0]]);
+            const prev   = new Map([[startKey, null]]);
+            const open   = new Set([startKey]);
+            const closed = new Set();
+
+            while (open.size > 0) {
+                let current = null, bestF = Infinity;
+                for (const key of open) {
+                    const [kLng, kLat] = coordStore.get(key);
+                    const h = Math.sqrt((kLat - endLat) ** 2 + (kLng - endLng) ** 2);
+                    const f = gScore.get(key) + h;
+                    if (f < bestF) { bestF = f; current = key; }
+                }
+                if (current === endKey) break;
+                open.delete(current);
+                closed.add(current);
+                const [curLng, curLat] = coordStore.get(current);
+                for (const [nb] of graph.get(current)) {
+                    if (closed.has(nb)) continue;
+                    const [nLng, nLat] = coordStore.get(nb);
+                    const edgeCost = Math.sqrt((nLat - curLat) ** 2 + (nLng - curLng) ** 2);
+                    const tentative = gScore.get(current) + edgeCost;
+                    if (tentative < (gScore.get(nb) ?? Infinity)) {
+                        gScore.set(nb, tentative);
+                        prev.set(nb, current);
+                        open.add(nb);
+                    }
+                }
+            }
+
+            if (!prev.has(endKey)) return null;
+            const path = [];
+            let cur = endKey;
+            while (cur !== null) { path.push(cur); cur = prev.get(cur); }
+            path.reverse();
+            return path;
+        }
+
+        // Returns [lng, lat][] using full road geometry stored on each graph edge.
+        function pathCoords(keyPath, graph, coordStore) {
+            if (keyPath.length === 1) return [coordStore.get(keyPath[0])];
+            const coords = [];
+            for (let i = 0; i < keyPath.length - 1; i++) {
+                let cs = graph.get(keyPath[i]).get(keyPath[i + 1]);
+                // Use coordinate comparison so snap keys (non-standard format) work correctly.
+                const cur = coordStore.get(keyPath[i]);
+                if (Math.abs(cur[0] - cs[0][0]) > 0.0001 || Math.abs(cur[1] - cs[0][1]) > 0.0001) {
+                    cs = [...cs].reverse();
+                }
+                const start = i === 0 ? 0 : 1;
+                for (let j = start; j < cs.length; j++) coords.push(cs[j]);
+            }
+            return coords;
+        }
+
+        // Remove consecutive duplicate / near-duplicate points that cause turf.lineOffset
+        // to produce NaN coordinates on short degenerate segments.
+        function cleanCoords(lngLats) {
+            const out = [lngLats[0]];
+            for (let i = 1; i < lngLats.length; i++) {
+                const p = out[out.length - 1], c = lngLats[i];
+                if (Math.abs(c[0] - p[0]) > 1e-7 || Math.abs(c[1] - p[1]) > 1e-7) out.push(c);
+            }
+            return out.length >= 2 ? out : lngLats.slice(0, 2);
+        }
+
+        // Normalise to S→N or W→E so turf.lineOffset positive = east consistently.
+        function normalizePath(lngLatCoords) {
+            if (lngLatCoords.length < 2) return lngLatCoords;
+            const dLat = lngLatCoords[lngLatCoords.length - 1][1] - lngLatCoords[0][1];
+            const dLng = lngLatCoords[lngLatCoords.length - 1][0] - lngLatCoords[0][0];
+            const shouldReverse = dLat < -1e-6 || (Math.abs(dLat) <= 1e-6 && dLng < 0);
+            return shouldReverse ? [...lngLatCoords].reverse() : lngLatCoords;
+        }
+
+        // state: 'normal' | 'highlight' | 'dim'
+        function createPieIcon(modes, state = 'normal') {
+            const SIZE = state === 'highlight' ? 24 : state === 'dim' ? 14 : 18;
+            const opacity = state === 'dim' ? 0.25 : 1;
+            let bg;
+            if (modes.length === 1) {
+                bg = COLORS[modes[0]];
+            } else {
+                const pct = 100 / modes.length;
+                const stops = modes.map((m, i) =>
+                    `${COLORS[m]} ${(i * pct).toFixed(1)}% ${((i + 1) * pct).toFixed(1)}%`
+                );
+                bg = `conic-gradient(${stops.join(', ')})`;
+            }
+            return L.divIcon({
+                className: 'pie-node',
+                html: `<div style="width:${SIZE}px;height:${SIZE}px;background:${bg};border-radius:50%;opacity:${opacity};"></div>`,
+                iconSize: [SIZE, SIZE],
+                iconAnchor: [SIZE / 2, SIZE / 2],
+            });
+        }
+
+        // ── Highlight state ───────────────────────────────────────────────────────
+        const nodeMarkers = new Map();   // nodeId → { marker, node }
+        const edgePolylines = [];        // [{ edge, plines: L.Polyline[] }]
+        let activeNodeId = null;
+
+        function applyHighlight(nodeId) {
+            const connectedEdges = edgePolylines.filter(
+                ({ edge }) => edge.a === nodeId || edge.b === nodeId
+            );
+            const connectedIds = new Set([nodeId]);
+            connectedEdges.forEach(({ edge }) => { connectedIds.add(edge.a); connectedIds.add(edge.b); });
+            const connectedEdgeSet = new Set(connectedEdges.map(({ edge }) => edge));
+
+            for (const { edge, plines } of edgePolylines) {
+                const on = connectedEdgeSet.has(edge);
+                plines.forEach(pl => pl.setStyle({ opacity: on ? 1 : 0.1, weight: on ? 7 : 3 }));
+            }
+            for (const [id, { marker, node }] of nodeMarkers) {
+                const state = id === nodeId ? 'highlight' : connectedIds.has(id) ? 'normal' : 'dim';
+                marker.setIcon(createPieIcon(node.modes, state));
+            }
+        }
+
+        function resetHighlight() {
+            edgePolylines.forEach(({ plines }) => plines.forEach(pl => pl.setStyle({ opacity: 1, weight: 5 })));
+            nodeMarkers.forEach(({ marker, node }) => marker.setIcon(createPieIcon(node.modes)));
+            activeNodeId = null;
+        }
+
+        map.on('click', resetHighlight);
+
+        // ── Main ──────────────────────────────────────────────────────────────────
+
+        fetch('export.geojson')
+            .then(r => r.json())
+            .then(data => {
+                const roadFeatures = data.features.filter(f => f.geometry.type === 'LineString');
+
+                L.geoJSON(data, { style: { color: '#222', weight: 3, opacity: 0.0 } }).addTo(map);
+
+                console.log('Building graph…');
+                const { graph, coordStore } = buildGraph(roadFeatures);
+                console.log(`Graph: ${graph.size} vertices`);
+
+                console.log('Snapping nodes…');
+                const nodeMap = new Map();
+                for (const node of NODES) {
+                    const result = snapNodeToGraph(roadFeatures, graph, coordStore, node.lat, node.lng);
+                    if (!result) { console.warn(`No snap for ${node.id}`); continue; }
+                    node.graphKey = result.key;
+                    node.snappedCoord = result.coord; // [lng, lat]
+                    nodeMap.set(node.id, node);
+                    console.log(`${node.id}: snapped to ${result.coord[1].toFixed(5)}, ${result.coord[0].toFixed(5)}`);
+                }
+
+                console.log('Routing edges…');
+                for (const edge of EDGES) {
+                    const nodeA = nodeMap.get(edge.a);
+                    const nodeB = nodeMap.get(edge.b);
+                    if (!nodeA || !nodeB) continue;
+
+                    const keyPath = aStar(graph, coordStore, nodeA.graphKey, nodeB.graphKey);
+                    if (!keyPath) { console.warn(`No path: ${edge.a} → ${edge.b}`); continue; }
+
+                    const lngLats = normalizePath(cleanCoords(pathCoords(keyPath, graph, coordStore)));
+                    const line = turf.lineString(lngLats);
+
+                    edgePolylines.push({ edge, plines: [] });
+                    for (const mode of edge.modes) {
+                        const offsetM = MODE_OFFSET_M[mode];
+                        let geom = line;
+                        if (offsetM !== 0) {
+                            try {
+                                const off = turf.lineOffset(line, offsetM, { units: 'meters' });
+                                const cs = off?.geometry?.coordinates;
+                                const valid = cs?.length >= 2 && cs.every(([x, y]) => isFinite(x) && isFinite(y));
+                                if (valid) geom = off;
+                                else console.warn(`lineOffset invalid ${edge.a}→${edge.b} ${mode}, using centreline`);
+                            } catch (e) {
+                                console.warn(`lineOffset threw ${edge.a}→${edge.b} ${mode}:`, e.message);
+                            }
+                        }
+                        const latlngs = geom.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+                        const pl = L.polyline(latlngs, {
+                            color: COLORS[mode],
+                            weight: 5,
+                            opacity: 1,
+                            lineJoin: 'round',
+                        }).addTo(map);
+                        // attach to last edgePolylines entry (added below before mode loop)
+                        edgePolylines[edgePolylines.length - 1].plines.push(pl);
+                    }
+                }
+
+                console.log('Rendering nodes…');
+                for (const node of NODES) {
+                    if (!node.snappedCoord) continue;
+                    const [sLng, sLat] = node.snappedCoord;
+                    const marker = L.marker([sLat, sLng], { icon: createPieIcon(node.modes) })
+                        .bindTooltip(node.label)
+                        .addTo(map);
+                    marker.on('click', e => {
+                        L.DomEvent.stopPropagation(e);
+                        if (activeNodeId === node.id) { resetHighlight(); return; }
+                        activeNodeId = node.id;
+                        applyHighlight(node.id);
+                    });
+                    nodeMarkers.set(node.id, { marker, node });
+                }
+                console.log('Done.');
+            });
+    </script>
+</body>
+</html>
