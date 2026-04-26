@@ -1,27 +1,42 @@
 ### Overview
 
+Game-level phases with disconnection handling. A player going missing pauses the game in **Paused**; if they reconnect in time play resumes, otherwise the game aborts.
+
 ```mermaid
 stateDiagram-v2
     direction TB
 
     [*] --> Idle
     Idle --> Lobby : GameCreated
-    Lobby --> MrXTurn : GameStarted
-    MrXTurn --> DetectiveTurn : MoveComplete
-    DetectiveTurn --> RoundEnd : AllDetectivesMoved
-    DetectiveTurn --> DetectivesWin : Caught
-    RoundEnd --> MrXTurn : NextRound
-    RoundEnd --> MrXWins : Round24Reached
+    Lobby --> InProgress : GameStarted
+
+    state InProgress {
+        [*] --> MrXTurn
+        MrXTurn --> DetectiveTurn : MoveComplete
+        DetectiveTurn --> RoundEnd : AllDetectivesMoved
+        RoundEnd --> MrXTurn : NextRound
+    }
+
+    InProgress --> Paused : PlayerDisconnected
+    Paused --> InProgress : ReconnectedInTime
+    Paused --> GameAborted : GracePeriodExpired
+
+    InProgress --> DetectivesWin : Caught
+    InProgress --> MrXWins : Round24Reached
+
     DetectivesWin --> [*]
     MrXWins --> [*]
+    GameAborted --> [*]
 ```
 
 ---
 
-### Mr x states
+### Mr X states
+
+**AwaitingMove** tracks whether Mr X is actively engaged or idle. A turn timer expiry auto-skips the move server-side. Network errors enter a reconnection loop before either resuming or disconnecting.
 
 ```mermaid
-stateDiagram
+stateDiagram-v2
     direction TB
 
     [*] --> CheckingReveal
@@ -29,7 +44,20 @@ stateDiagram
     CheckingReveal --> Revealed : RoundRevealed
     Hidden --> AwaitingMove : RevealCheckComplete
     Revealed --> AwaitingMove : RevealCheckComplete
+
+    state AwaitingMove {
+        [*] --> Active
+        Active --> Idle : NoActivityTimeout
+        Idle --> Active : ActivityReceived
+    }
+
     AwaitingMove --> ValidatingMove : MoveSubmitted
+    AwaitingMove --> AutoSkipped : TurnTimerExpired
+    AwaitingMove --> Reconnecting : NetworkError
+    Reconnecting --> AwaitingMove : ReconnectSuccess
+    Reconnecting --> Disconnected : MaxRetriesExceeded
+    Disconnected --> [*]
+
     ValidatingMove --> AwaitingMove : MoveInvalid
     ValidatingMove --> ApplyingSingleMove : MoveValidSingle
     ValidatingMove --> ApplyingDoubleMove : MoveValidDouble
@@ -37,113 +65,42 @@ stateDiagram
     ApplyingDoubleMove --> AwaitingMove : FirstMoveApplied
     ApplyingDoubleMove --> BroadcastingTransport : SecondMoveApplied
     BroadcastingTransport --> [*] : MoveComplete
+    AutoSkipped --> [*] : MoveComplete
 ```
 
 ---
 
 ### Detective states
 
+Same active/idle tracking and error paths as Mr X. **AutoSkipped** feeds into the normal **Skipped** path so the turn-rotation logic stays consistent regardless of how a detective's turn ended.
+
 ```mermaid
-stateDiagram
+stateDiagram-v2
     direction TB
 
     [*] --> AwaitingDetMove
+
+    state AwaitingDetMove {
+        [*] --> Active
+        Active --> Idle : NoActivityTimeout
+        Idle --> Active : ActivityReceived
+    }
+
     AwaitingDetMove --> ValidatingMove : MoveSubmitted
     AwaitingDetMove --> Skipped : NoValidMoves
+    AwaitingDetMove --> AutoSkipped : TurnTimerExpired
+    AwaitingDetMove --> Reconnecting : NetworkError
+    Reconnecting --> AwaitingDetMove : ReconnectSuccess
+    Reconnecting --> Disconnected : MaxRetriesExceeded
+    Disconnected --> [*]
+
     ValidatingMove --> AwaitingDetMove : MoveInvalid
     ValidatingMove --> ApplyingMove : MoveValid
     ApplyingMove --> CheckingCatch : MoveApplied
     CheckingCatch --> DetectivesWin : Caught
     CheckingCatch --> Skipped : NotCaught
+    AutoSkipped --> Skipped : ServerSkipsPlayer
     Skipped --> AwaitingDetMove : NextDetective
     Skipped --> [*] : AllDetectivesMoved
     DetectivesWin --> [*]
 ```
-
----
-
-### Game state vs Player state
-
-The **game state** is server-authoritative and drives phase transitions (whose turn it is, round number, win conditions). The **player state** is per-connection and tracks whether a client is actively interacting or has gone quiet — a distinction that matters for timeout handling and reconnection logic.
-
-```mermaid
-stateDiagram-v2
-    direction TB
-
-    state "Game State (server)" as GS {
-        [*] --> GS_Idle
-        GS_Idle --> GS_Lobby : GameCreated
-        GS_Lobby --> GS_InProgress : GameStarted
-        GS_InProgress --> GS_Ended : WinConditionMet
-        GS_Ended --> [*]
-    }
-
-    state "Player State (per client)" as PS {
-        [*] --> PS_Disconnected
-        PS_Disconnected --> PS_Connected : WebSocketOpen
-        PS_Connected --> PS_Active : ActionReceived
-        PS_Active --> PS_Idle : NoActionTimeout
-        PS_Idle --> PS_Active : ActionReceived
-        PS_Idle --> PS_Disconnected : IdleTimeout
-        PS_Connected --> PS_Disconnected : WebSocketClose
-        PS_Active --> PS_Disconnected : WebSocketClose
-    }
-```
-
----
-
-### Player active vs idle
-
-A player transitions to **Idle** after a period of inactivity (no moves, heartbeats, or messages). If idleness persists past a second threshold the server treats the player as disconnected and may pause or forfeit accordingly.
-
-```mermaid
-stateDiagram-v2
-    direction LR
-
-    [*] --> Active : Connected & in game
-    Active --> Idle : NoActivityTimeout (e.g. 30s)
-    Idle --> Active : ActivityReceived
-    Idle --> Disconnected : IdleTimeout exceeded (e.g. 60s)
-    Disconnected --> Active : Reconnected within grace period
-    Disconnected --> Forfeited : GracePeriodExpired
-    Forfeited --> [*]
-```
-
----
-
-### Timeouts and errors
-
-Key failure modes and where they surface — client-side errors belong in player state; server-side errors belong in game state.
-
-```mermaid
-stateDiagram-v2
-    direction TB
-
-    state "Client / Player errors" as CE {
-        [*] --> CE_WaitingForMove
-        CE_WaitingForMove --> CE_MoveTimeout : TurnTimerExpired
-        CE_MoveTimeout --> CE_AutoSkip : ServerSkipsPlayer
-        CE_AutoSkip --> [*]
-
-        CE_WaitingForMove --> CE_NetworkError : WebSocketError
-        CE_NetworkError --> CE_Reconnecting : RetryAttempt
-        CE_Reconnecting --> CE_WaitingForMove : ReconnectSuccess
-        CE_Reconnecting --> CE_Disconnected : MaxRetriesExceeded
-        CE_Disconnected --> [*]
-    }
-
-    state "Server / Game errors" as SE {
-        [*] --> SE_Running
-        SE_Running --> SE_InvalidMove : BadMoveReceived
-        SE_InvalidMove --> SE_Running : ErrorSentToClient
-
-        SE_Running --> SE_PlayerMissing : PlayerDisconnected
-        SE_PlayerMissing --> SE_Running : PlayerReconnected
-        SE_PlayerMissing --> SE_GameAborted : GracePeriodExpired
-
-        SE_Running --> SE_InternalError : UnhandledException
-        SE_InternalError --> SE_GameAborted : CannotRecover
-        SE_GameAborted --> [*]
-    }
-```
-
