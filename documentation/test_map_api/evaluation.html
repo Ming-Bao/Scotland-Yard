@@ -302,6 +302,13 @@
             border-top: 1px solid var(--border);
             padding-top: 0.7rem;
         }
+        sup {
+            font-size: 0.65rem;
+            color: var(--muted);
+            vertical-align: super;
+            line-height: 0;
+        }
+
         .callout {
             background: rgba(247,127,0,0.07);
             border: 1px solid rgba(247,127,0,0.25);
@@ -334,12 +341,12 @@
                         <div class="legend-dot" style="background:var(--google)"></div>
                         <div>
                             <div class="legend-name">Google Maps</div>
-                            <div class="legend-total">21 / 30</div>
+                            <div class="legend-total">20 / 30</div>
                             <div class="legend-bars">
                                 <div class="legend-bar-row">
                                     <span style="width:88px">Performance</span>
-                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:80%;background:var(--google)"></div></div>
-                                    <span>4</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:60%;background:var(--google)"></div></div>
+                                    <span>3</span>
                                 </div>
                                 <div class="legend-bar-row">
                                     <span style="width:88px">Cost</span>
@@ -375,12 +382,12 @@
                         <div class="legend-dot" style="background:var(--leaflet)"></div>
                         <div>
                             <div class="legend-name">Leaflet</div>
-                            <div class="legend-total">23 / 30</div>
+                            <div class="legend-total">24 / 30</div>
                             <div class="legend-bars">
                                 <div class="legend-bar-row">
                                     <span style="width:88px">Performance</span>
-                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:60%;background:var(--leaflet)"></div></div>
-                                    <span>3</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:80%;background:var(--leaflet)"></div></div>
+                                    <span>4</span>
                                 </div>
                                 <div class="legend-bar-row">
                                     <span style="width:88px">Cost</span>
@@ -488,19 +495,19 @@
                         <tr>
                             <td>
                                 <div class="crit-name">Performance</div>
-                                <div class="crit-sub">Render speed, large dataset handling, tile loading</div>
+                                <div class="crit-sub">Render speed measured via Firefox headless — 3 runs each, navigation start → "Done."</div>
                             </td>
                             <td><div class="api-cell">
-                                <div class="score-badge s4">4</div>
-                                <div class="cell-note">Well-optimised cloud infrastructure with fast tile delivery. API round-trip adds minor first-load latency. Handles game scale comfortably.</div>
+                                <div class="score-badge s3">3</div>
+                                <div class="cell-note">Slowest at baseline (0.45 s mean) with high first-run variance (up to 1.13 s from API initialisation overhead). Ties Leaflet at the 200-node stress scale (both 2.33 s mean). <sup>[11]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
-                                <div class="score-badge s3">3</div>
-                                <div class="cell-note">DOM-based rendering degrades with many markers and polylines. Adequate for the 4-node baseline, noticeably slower for the 12-node medium scenario.</div>
+                                <div class="score-badge s4">4</div>
+                                <div class="cell-note">Fastest at baseline (0.19 s mean). Matches Google Maps at the 200-node stress scale (2.33 s mean) and is only 0.25 s behind MapLibre GL. DOM rendering does not limit performance at Scotland Yard game scale. <sup>[11]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s5">5</div>
-                                <div class="cell-note">GPU-accelerated WebGL rendering. The 200-node stress test in <code>maplibre-200</code> demonstrates sustained performance well beyond game scale.</div>
+                                <div class="cell-note">Most consistent across both scales. Best at the 200-node stress test (2.08 s mean, lower variance than either alternative). WebGL initialisation adds ~0.11 s at baseline but pays off under load. <sup>[11]</sup></div>
                             </div></td>
                         </tr>
 
@@ -512,7 +519,7 @@
                             </td>
                             <td><div class="api-cell">
                                 <div class="score-badge s1">1</div>
-                                <div class="cell-note">~$7 USD per 1,000 Dynamic Map loads after a $200/month free tier. Requires a billing account and active API key for any deployment.</div>
+                                <div class="cell-note">~$7 USD per 1,000 Dynamic Map loads after a $200/month free tier. Requires a billing account and active API key for any deployment. <sup>[1]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s5">5</div>
@@ -532,15 +539,15 @@
                             </td>
                             <td><div class="api-cell">
                                 <div class="score-badge s3">3</div>
-                                <div class="cell-note">Proprietary ToS — no offline use or self-hosting. For this non-commercial university project these restrictions are not a practical concern; usage stays within the free tier.</div>
+                                <div class="cell-note">Proprietary ToS — tile caching and self-hosting are prohibited. For this non-commercial university project the offline and redistribution restrictions are not a practical concern. <sup>[2]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s5">5</div>
-                                <div class="cell-note">BSD-2-Clause. Highly permissive — commercial use, modification, and distribution all allowed without restriction.</div>
+                                <div class="cell-note">BSD-2-Clause. Highly permissive — commercial use, modification, and redistribution all allowed without restriction. <sup>[3]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s5">5</div>
-                                <div class="cell-note">BSD-2-Clause. Open-source fork of Mapbox GL JS (which switched to proprietary BSL-1.0 in 2020). Fully permissive for all use cases.</div>
+                                <div class="cell-note">BSD-3-Clause. Open-source community fork of Mapbox GL JS v1.13, created after Mapbox switched to a proprietary licence in December 2020. Fully permissive for all use cases. <sup>[6][9][10]</sup></div>
                             </div></td>
                         </tr>
 
@@ -548,19 +555,19 @@
                         <tr>
                             <td>
                                 <div class="crit-name">Usability &amp; Visual</div>
-                                <div class="crit-sub">Map quality, API ergonomics, user familiarity</div>
+                                <div class="crit-sub">End-user map quality, visual polish, tile rendering</div>
                             </td>
                             <td><div class="api-cell">
                                 <div class="score-badge s5">5</div>
-                                <div class="cell-note">Most polished, user-familiar basemap. Custom JSON styling produces a clean dark game aesthetic. Professional-grade out of the box.</div>
+                                <div class="cell-note">Most polished and user-familiar basemap. Custom JSON styling produces a clean dark game aesthetic with road hierarchy, water, and POI control. Professional-grade out of the box.</div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s3">3</div>
-                                <div class="cell-note">Simple, well-documented API that is easy to pick up. Visual quality depends heavily on the tile provider. No smooth-zoom of vector tiles.</div>
+                                <div class="cell-note">Visual quality depends entirely on the chosen tile provider. Default CartoDB tiles produce a functional but dated appearance. Raster tiles lack the resolution-independent zoom of vector rendering.</div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s4">4</div>
-                                <div class="cell-note">Smooth vector tile rendering with crisp zoom transitions. Steeper learning curve with the GL style spec, but produces high-quality results.</div>
+                                <div class="cell-note">Smooth, resolution-independent vector tile rendering with crisp zoom transitions. High-quality dark-mode styling is achievable via the GL Style Spec. Slightly less familiar to end-users than Google Maps.</div>
                             </div></td>
                         </tr>
 
@@ -576,11 +583,11 @@
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s4">4</div>
-                                <div class="cell-note">Large plugin ecosystem (500+). Supports custom tile layers, GeoJSON overlays, and divIcon markers. Flexible for most scenarios but bounded by DOM rendering.</div>
+                                <div class="cell-note">Large plugin ecosystem (551+). Supports custom tile layers, GeoJSON overlays, and divIcon markers. Flexible for most scenarios but bounded by DOM rendering. <sup>[4]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s5">5</div>
-                                <div class="cell-note">Full GL Style Specification — complete control over sprites, fonts, expressions, and data sources. Best-in-class flexibility for a fully custom game map.</div>
+                                <div class="cell-note">Full GL Style Specification — complete control over sprites, fonts, expressions, and data sources. Best-in-class flexibility for a fully custom game map. <sup>[8]</sup></div>
                             </div></td>
                         </tr>
 
@@ -596,19 +603,19 @@
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s3">3</div>
-                                <div class="cell-note">Established community project, but release cadence has slowed markedly. Small core team; some GitHub issues remain open for years.</div>
+                                <div class="cell-note">The v1.x branch is in maintenance mode (critical fixes only) and v2.0.0-alpha remains pre-release. Small core team; some issues have remained open for years. <sup>[5]</sup></div>
                             </div></td>
                             <td><div class="api-cell">
                                 <div class="score-badge s4">4</div>
-                                <div class="cell-note">Active open-source community with multiple corporate and individual committers. Issues are handled with regular releases and a growing ecosystem.</div>
+                                <div class="cell-note">Active open-source community with multiple corporate and individual committers. Issues are handled with regular releases and a growing ecosystem. <sup>[7]</sup></div>
                             </div></td>
                         </tr>
                     </tbody>
                     <tfoot>
                         <tr>
                             <th>Total Score</th>
-                            <td class="total-g">21 / 30</td>
-                            <td class="total-l">23 / 30</td>
+                            <td class="total-g">20 / 30</td>
+                            <td class="total-l">24 / 30</td>
                             <td class="total-m">28 / 30</td>
                         </tr>
                     </tfoot>
@@ -688,6 +695,79 @@
                 <code>GOOGLE_MAPS_API_KEY=your_key</code>.
             </div>
         </section>
+
+        <!-- ── References ────────────────────────────────────── -->
+        <section>
+            <section-title>References</section-title>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.82rem;line-height:1.6;">
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[1]</span>
+                    <span>Google LLC. <em>Google Maps Platform pricing.</em>
+                    <a href="https://developers.google.com/maps/billing-and-pricing/pricing" style="color:#4285F4;text-decoration:none">developers.google.com/maps/billing-and-pricing/pricing</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[2]</span>
+                    <span>Google LLC. <em>Google Maps Platform Service Specific Terms.</em>
+                    <a href="https://cloud.google.com/maps-platform/terms/maps-service-terms" style="color:#4285F4;text-decoration:none">cloud.google.com/maps-platform/terms/maps-service-terms</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[3]</span>
+                    <span>Agafonkin, V. <em>Leaflet — BSD 2-Clause licence.</em>
+                    <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" style="color:#33a532;text-decoration:none">github.com/Leaflet/Leaflet/blob/main/LICENSE</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[4]</span>
+                    <span>Leaflet contributors. <em>Leaflet plugin directory (551+ plugins).</em>
+                    <a href="https://leafletjs.com/plugins.html" style="color:#33a532;text-decoration:none">leafletjs.com/plugins.html</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[5]</span>
+                    <span>Leaflet contributors. <em>Leaflet GitHub releases — v1.9.4 latest stable; v2.0.0-alpha in development.</em>
+                    <a href="https://github.com/Leaflet/Leaflet/releases" style="color:#33a532;text-decoration:none">github.com/Leaflet/Leaflet/releases</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[6]</span>
+                    <span>MapLibre contributors. <em>MapLibre GL JS — BSD 3-Clause licence.</em>
+                    <a href="https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt" style="color:#f77f00;text-decoration:none">github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[7]</span>
+                    <span>MapLibre contributors. <em>MapLibre GL JS GitHub releases.</em>
+                    <a href="https://github.com/maplibre/maplibre-gl-js/releases" style="color:#f77f00;text-decoration:none">github.com/maplibre/maplibre-gl-js/releases</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[8]</span>
+                    <span>MapLibre contributors. <em>MapLibre GL Style Specification.</em>
+                    <a href="https://maplibre.org/maplibre-style-spec/" style="color:#f77f00;text-decoration:none">maplibre.org/maplibre-style-spec/</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[9]</span>
+                    <span>MapTiler. <em>MapLibre — the open-source fork of Mapbox GL.</em> January 2021.
+                    <a href="https://www.maptiler.com/news/2021/01/maplibre-mapbox-gl-open-source-fork/" style="color:#f77f00;text-decoration:none">maptiler.com/news/2021/01/maplibre-mapbox-gl-open-source-fork/</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[10]</span>
+                    <span>Mapbox. <em>mapbox-gl-js issue #10162 — licence change discussion.</em> December 2020.
+                    <a href="https://github.com/mapbox/mapbox-gl-js/issues/10162" style="color:#f77f00;text-decoration:none">github.com/mapbox/mapbox-gl-js/issues/10162</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[11]</span>
+                    <span>Bao, M. <em>Headless browser benchmark — Firefox, Selenium, 3 runs per scenario. Wellington road network from OpenStreetMap contributors.</em> ENGR489, Victoria University of Wellington, 2026. Source: <code>time_maps.py</code> + <code>timing_results.json</code> in this repository.</span>
+                </div>
+
+            </div>
+        </section>
     </main>
 
     <script>
@@ -699,7 +779,7 @@
                 datasets: [
                     {
                         label: 'Google Maps',
-                        data: [4, 1, 3, 5, 3, 5],
+                        data: [3, 1, 3, 5, 3, 5],
                         borderColor: '#4285F4',
                         backgroundColor: 'rgba(66,133,244,0.12)',
                         pointBackgroundColor: '#4285F4',
@@ -709,7 +789,7 @@
                     },
                     {
                         label: 'Leaflet',
-                        data: [3, 5, 5, 3, 4, 3],
+                        data: [4, 5, 5, 3, 4, 3],
                         borderColor: '#33a532',
                         backgroundColor: 'rgba(51,165,50,0.12)',
                         pointBackgroundColor: '#33a532',
@@ -809,20 +889,27 @@
                     + '. 200 nodes sampled from actual Wellington road endpoints (seed=42).';
 
                 // Update finding callout with measured numbers
-                const lBase   = data?.baseline?.['Leaflet']?.mean;
-                const mBase   = data?.baseline?.['MapLibre GL']?.mean;
-                const lStress = data?.stress?.['Leaflet']?.mean;
-                const mStress = data?.stress?.['MapLibre GL']?.mean;
+                const gmBase   = data?.baseline?.['Google Maps']?.mean;
+                const lBase    = data?.baseline?.['Leaflet']?.mean;
+                const mBase    = data?.baseline?.['MapLibre GL']?.mean;
+                const gmStress = data?.stress?.['Google Maps']?.mean;
+                const lStress  = data?.stress?.['Leaflet']?.mean;
+                const mStress  = data?.stress?.['MapLibre GL']?.mean;
                 if (lBase != null && mBase != null && lStress != null && mStress != null) {
-                    const faster = lBase < mBase ? 'Leaflet' : 'MapLibre GL';
-                    const slower = lBase < mBase ? 'MapLibre GL' : 'Leaflet';
-                    const overhead = Math.abs(mBase - lBase).toFixed(2);
+                    const stressMeans = [gmStress, lStress, mStress].filter(v => v != null);
+                    const stressLo = Math.min(...stressMeans).toFixed(2);
+                    const stressHi = Math.max(...stressMeans).toFixed(2);
+                    const gmNote = gmBase != null
+                        ? `Google Maps is slowest at baseline (${gmBase.toFixed(2)} s mean) with high first-run variance from API initialisation. `
+                        : '';
                     document.getElementById('bench-finding').innerHTML =
-                        `<strong>Finding:</strong> ${faster} is faster than ${slower} at the baseline scale. `
-                        + `${slower} carries fixed overhead (~${overhead} s) from initialisation. `
-                        + `At the 200-node stress scale both complete in ~${lStress.toFixed(2)}–${mStress.toFixed(2)} s — `
-                        + `the bottleneck is shared A* snapping (O(n × |road features|)), not the rendering library. `
-                        + `MapLibre's GPU advantage becomes relevant only when DOM manipulation is the limiting factor.`;
+                        `<strong>Finding:</strong> Leaflet is fastest at the baseline scale (${lBase.toFixed(2)} s mean), `
+                        + `ahead of MapLibre GL (${mBase.toFixed(2)} s) by a modest ${(mBase - lBase).toFixed(2)} s. `
+                        + gmNote
+                        + `At the 200-node stress scale all libraries complete in ${stressLo}–${stressHi} s — `
+                        + `the bottleneck is the shared A* road-snapping computation, not the rendering library itself. `
+                        + `MapLibre GL is most consistent under load (${mStress.toFixed(2)} s mean, lowest variance); `
+                        + `Leaflet performs comparably at game-relevant node counts.`;
                 }
             })
             .catch(() => {});  // silently skip if file not served over file:// protocol

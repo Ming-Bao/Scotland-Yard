@@ -10,7 +10,7 @@ Between runs the page is reset by navigating to about:blank.
 Run: python3 time_maps.py
 """
 
-import http.server, threading, time, statistics, json, logging
+import http.server, threading, time, statistics, json
 from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
@@ -64,17 +64,34 @@ def make_driver():
     return webdriver.Firefox(options=opts, service=Service(log_output='/dev/null'))
 
 def quit_driver(driver):
-    # Silence the "Error terminating service process" warning that snap Firefox
-    # emits when geckodriver can't be sent SIGTERM across the snap boundary.
-    svc_log = logging.getLogger('selenium.webdriver.common.service')
-    prev_level = svc_log.level
-    svc_log.setLevel(logging.CRITICAL)
+    # snap Firefox geckodriver can't receive SIGTERM across the snap sandbox boundary,
+    # so _terminate_process raises PermissionError and logs an error.  It also fires
+    # from __del__ after our context closes, so log-level suppression isn't reliable.
+    # Monkey-patch the instance to swallow OSError silently for the lifetime of the object.
+    svc = driver.service
+    proc = svc.process
+
+    def _silent_terminate():
+        for stream in (proc.stdin, proc.stdout, proc.stderr):
+            try:
+                if stream:
+                    stream.close()
+            except Exception:
+                pass
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+        try:
+            proc.wait(10)
+        except Exception:
+            pass
+
+    svc._terminate_process = _silent_terminate
     try:
         driver.quit()
     except Exception:
         pass
-    finally:
-        svc_log.setLevel(prev_level)
 
 # ── Timing ───────────────────────────────────────────────────────────────────
 
