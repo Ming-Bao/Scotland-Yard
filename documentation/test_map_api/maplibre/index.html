@@ -12,9 +12,40 @@
             box-shadow: 0 0 12px #000;
             cursor: pointer;
         }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(0,0,0,0.78);
+            color: #eee;
+            padding: 6px 14px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: system-ui, sans-serif;
+            font-size: 13px;
+            user-select: none;
+        }
+        #controls label { color: #aaa; }
+        #controls select {
+            background: #1c1c1c;
+            color: #eee;
+            border: 1px solid #444;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
+    <div id="controls">
+        <label for="scenario-select">Scenario:</label>
+        <select id="scenario-select"></select>
+    </div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
@@ -22,23 +53,6 @@
     <script>
         const COLORS = { scooter: '#00b4d8', bus: '#f77f00', train: '#c1121f' };
         const MODE_OFFSET_M = { scooter: -15, train: 0, bus: 15 };
-
-        // ── Game definition ───────────────────────────────────────────────────────
-        // Add nodes and edges here — routing is computed at runtime from the GeoJSON.
-
-        const NODES = [
-            { id: 'vuw',      label: 'VUW Kelburn',               lat: -41.2866, lng: 174.7685, modes: ['scooter', 'bus'] },
-            { id: 'station',  label: 'Wellington Railway Station', lat: -41.2786, lng: 174.7798, modes: ['bus', 'train'] },
-            { id: 'tepapa',   label: 'Te Papa Tongarewa',          lat: -41.2906, lng: 174.7824, modes: ['scooter', 'bus', 'train'] },
-            { id: 'courtney', label: 'Courtney Place',             lat: -41.2952, lng: 174.7788, modes: ['scooter', 'bus'] },
-        ];
-
-        const EDGES = [
-            { a: 'vuw',      b: 'station',  modes: ['bus'] },
-            { a: 'station',  b: 'tepapa',   modes: ['bus', 'train'] },
-            { a: 'tepapa',   b: 'courtney', modes: ['scooter', 'bus'] },
-            { a: 'courtney', b: 'vuw',      modes: ['scooter', 'bus'] },
-        ];
 
         // ── Road graph ────────────────────────────────────────────────────────────
 
@@ -202,11 +216,11 @@
 
         // ── Highlight ─────────────────────────────────────────────────────────────
 
-        const nodeMarkers = new Map();
-        const edgeLayers  = [];
+        const nodeMarkers = new Map();  // nodeId → { el, node, marker }
+        const edgeLayers  = [];         // [{ edge, layerIds }]
         let activeNodeId  = null;
 
-        function applyHighlight(map, nodeId) {
+        function applyHighlight(nodeId) {
             const connected = edgeLayers.filter(({ edge }) => edge.a === nodeId || edge.b === nodeId);
             const connectedIds = new Set([nodeId]);
             connected.forEach(({ edge }) => { connectedIds.add(edge.a); connectedIds.add(edge.b); });
@@ -224,7 +238,7 @@
             }
         }
 
-        function resetHighlight(map) {
+        function resetHighlight() {
             edgeLayers.forEach(({ layerIds }) =>
                 layerIds.forEach(id => {
                     map.setPaintProperty(id, 'line-opacity', 1);
@@ -260,18 +274,41 @@
         });
 
         map.on('load', () => {
-            fetch('../leaflet/export.geojson')
-                .then(r => r.json())
-                .then(data => {
-                    const roadFeatures = data.features.filter(f => f.geometry.type === 'LineString');
+            Promise.all([
+                fetch('../leaflet/export.geojson').then(r => r.json()),
+                fetch('../scenarios.json').then(r => r.json()),
+            ]).then(([geoData, { scenarios }]) => {
+                const roadFeatures = geoData.features.filter(f => f.geometry.type === 'LineString');
 
-                    console.log('Building graph…');
-                    const { graph, coordStore } = buildGraph(roadFeatures);
-                    console.log(`Graph: ${graph.size} vertices`);
+                console.log('Building graph…');
+                const { graph, coordStore } = buildGraph(roadFeatures);
+                console.log(`Graph: ${graph.size} vertices`);
+
+                // Populate scenario selector
+                const select = document.getElementById('scenario-select');
+                scenarios.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    select.appendChild(opt);
+                });
+
+                function renderScenario({ nodes, edges }) {
+                    // Clear previous layers, sources, and markers
+                    edgeLayers.forEach(({ layerIds }) => {
+                        layerIds.forEach(id => {
+                            if (map.getLayer(id))  map.removeLayer(id);
+                            if (map.getSource(id)) map.removeSource(id);
+                        });
+                    });
+                    edgeLayers.length = 0;
+                    nodeMarkers.forEach(({ marker }) => marker.remove());
+                    nodeMarkers.clear();
+                    activeNodeId = null;
 
                     console.log('Snapping nodes…');
                     const nodeMap = new Map();
-                    for (const node of NODES) {
+                    for (const node of nodes) {
                         const result = snapNodeToGraph(roadFeatures, graph, coordStore, node.lat, node.lng);
                         if (!result) { console.warn(`No snap for ${node.id}`); continue; }
                         node.graphKey     = result.key;
@@ -280,7 +317,7 @@
                     }
 
                     console.log('Routing edges…');
-                    for (const edge of EDGES) {
+                    for (const edge of edges) {
                         const nodeA = nodeMap.get(edge.a);
                         const nodeB = nodeMap.get(edge.b);
                         if (!nodeA || !nodeB) continue;
@@ -317,26 +354,38 @@
                     }
 
                     console.log('Rendering nodes…');
-                    for (const node of NODES) {
+                    for (const node of nodes) {
                         if (!node.snappedCoord) continue;
                         const el = createPieElement(node.modes);
                         el.title = node.label;
                         el.addEventListener('click', e => {
                             e.stopPropagation();
-                            if (activeNodeId === node.id) { resetHighlight(map); return; }
+                            if (activeNodeId === node.id) { resetHighlight(); return; }
                             activeNodeId = node.id;
-                            applyHighlight(map, node.id);
+                            applyHighlight(node.id);
                         });
-                        new maplibregl.Marker({ element: el, anchor: 'center' })
+                        const marker = new maplibregl.Marker({ element: el, anchor: 'center' })
                             .setLngLat(node.snappedCoord)
                             .setPopup(new maplibregl.Popup({ offset: 14 }).setText(node.label))
                             .addTo(map);
-                        nodeMarkers.set(node.id, { el, node });
+                        nodeMarkers.set(node.id, { el, node, marker });
                     }
 
-                    map.on('click', () => { if (activeNodeId !== null) resetHighlight(map); });
+                    map.on('click', () => { if (activeNodeId !== null) resetHighlight(); });
+                    window.__mapDone = performance.now();
                     console.log('Done.');
+                }
+
+                const initialId = new URLSearchParams(location.search).get('scenario') ?? scenarios[0].id;
+                const initial = scenarios.find(s => s.id === initialId) ?? scenarios[0];
+                select.value = initial.id;
+                renderScenario(initial);
+
+                select.addEventListener('change', () => {
+                    const s = scenarios.find(s => s.id === select.value);
+                    if (s) renderScenario(s);
                 });
+            });
         });
     </script>
 </body>
