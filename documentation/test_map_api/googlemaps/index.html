@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wellington Scotland Yard — Google Maps</title>
+    <style>
+        #map { height: 100vh; width: 100vw; }
+        body { margin: 0; padding: 0; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: rgba(0,0,0,0.78);
+            color: #eee;
+            padding: 6px 14px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: system-ui, sans-serif;
+            font-size: 13px;
+            user-select: none;
+        }
+        #controls label { color: #aaa; }
+        #controls select {
+            background: #1c1c1c;
+            color: #eee;
+            border: 1px solid #444;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="scenario-select">Scenario:</label>
+        <select id="scenario-select"></select>
+    </div>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <script>
+        const COLORS = { scooter: '#00b4d8', bus: '#f77f00', train: '#c1121f' };
+        const MODE_OFFSET_M = { scooter: -15, train: 0, bus: 15 };
+
+        const MAP_STYLE = [
+            { elementType: 'geometry',           stylers: [{ color: '#1d1d1d' }] },
+            { elementType: 'labels',              stylers: [{ visibility: 'off' }] },
+            { featureType: 'road',                elementType: 'geometry', stylers: [{ color: '#2e2e2e' }] },
+            { featureType: 'road.arterial',       elementType: 'geometry', stylers: [{ color: '#383838' }] },
+            { featureType: 'road.highway',        elementType: 'geometry', stylers: [{ color: '#444' }] },
+            { featureType: 'water',               elementType: 'geometry', stylers: [{ color: '#000' }] },
+            { featureType: 'poi',                 stylers: [{ visibility: 'off' }] },
+            { featureType: 'transit',             stylers: [{ visibility: 'off' }] },
+            { featureType: 'administrative',      elementType: 'geometry.stroke', stylers: [{ color: '#333' }] },
+        ];
+
+        // ── Road graph ────────────────────────────────────────────────────────────
+
+        function coordKey([lng, lat]) {
+            return `${lng.toFixed(4)},${lat.toFixed(4)}`;
+        }
+
+        function buildGraph(features) {
+            const graph      = new Map();
+            const coordStore = new Map();
+            for (const f of features) {
+                const cs = f.geometry.coordinates;
+                if (cs.length < 2) continue;
+                const aKey = coordKey(cs[0]);
+                const bKey = coordKey(cs[cs.length - 1]);
+                if (aKey === bKey) continue;
+                if (!graph.has(aKey)) { graph.set(aKey, new Map()); coordStore.set(aKey, cs[0]); }
+                if (!graph.has(bKey)) { graph.set(bKey, new Map()); coordStore.set(bKey, cs[cs.length - 1]); }
+                if (!graph.get(aKey).has(bKey)) {
+                    graph.get(aKey).set(bKey, cs);
+                    graph.get(bKey).set(aKey, cs);
+                }
+            }
+            return { graph, coordStore };
+        }
+
+        function snapNodeToGraph(roadFeatures, graph, coordStore, lat, lng) {
+            const pt = turf.point([lng, lat]);
+            let bestDist = Infinity, bestRoad = null, bestSnapped = null;
+            for (const f of roadFeatures) {
+                const snapped = turf.nearestPointOnLine(f, pt, { units: 'kilometers' });
+                if (snapped.properties.dist < bestDist) {
+                    bestDist = snapped.properties.dist;
+                    bestRoad = f;
+                    bestSnapped = snapped;
+                }
+            }
+            if (!bestRoad) return null;
+            const cs   = bestRoad.geometry.coordinates;
+            const idx  = bestSnapped.properties.index;
+            const snap = bestSnapped.geometry.coordinates;
+            const snapKey = `snap:${snap[0].toFixed(6)},${snap[1].toFixed(6)}`;
+            if (!graph.has(snapKey)) {
+                coordStore.set(snapKey, snap);
+                graph.set(snapKey, new Map());
+                const aKey = coordKey(cs[0]);
+                const bKey = coordKey(cs[cs.length - 1]);
+                if (graph.has(aKey)) {
+                    const snapToA = [snap, ...cs.slice(0, idx + 1).reverse()];
+                    graph.get(snapKey).set(aKey, snapToA);
+                    graph.get(aKey).set(snapKey, [...snapToA].reverse());
+                }
+                if (idx + 1 < cs.length && graph.has(bKey)) {
+                    const snapToB = [snap, ...cs.slice(idx + 1)];
+                    graph.get(snapKey).set(bKey, snapToB);
+                    graph.get(bKey).set(snapKey, [...snapToB].reverse());
+                }
+            }
+            return { key: snapKey, coord: snap };
+        }
+
+        function aStar(graph, coordStore, startKey, endKey) {
+            if (startKey === endKey) return [startKey];
+            const [endLng, endLat] = coordStore.get(endKey);
+            const gScore = new Map([[startKey, 0]]);
+            const prev   = new Map([[startKey, null]]);
+            const open   = new Set([startKey]);
+            const closed = new Set();
+            while (open.size > 0) {
+                let current = null, bestF = Infinity;
+                for (const key of open) {
+                    const [kLng, kLat] = coordStore.get(key);
+                    const h = Math.sqrt((kLat - endLat) ** 2 + (kLng - endLng) ** 2);
+                    const f = gScore.get(key) + h;
+                    if (f < bestF) { bestF = f; current = key; }
+                }
+                if (current === endKey) break;
+                open.delete(current);
+                closed.add(current);
+                const [curLng, curLat] = coordStore.get(current);
+                for (const [nb] of graph.get(current)) {
+                    if (closed.has(nb)) continue;
+                    const [nLng, nLat] = coordStore.get(nb);
+                    const edgeCost = Math.sqrt((nLat - curLat) ** 2 + (nLng - curLng) ** 2);
+                    const tentative = gScore.get(current) + edgeCost;
+                    if (tentative < (gScore.get(nb) ?? Infinity)) {
+                        gScore.set(nb, tentative);
+                        prev.set(nb, current);
+                        open.add(nb);
+                    }
+                }
+            }
+            if (!prev.has(endKey)) return null;
+            const path = [];
+            let cur = endKey;
+            while (cur !== null) { path.push(cur); cur = prev.get(cur); }
+            path.reverse();
+            return path;
+        }
+
+        function pathCoords(keyPath, graph, coordStore) {
+            if (keyPath.length === 1) return [coordStore.get(keyPath[0])];
+            const coords = [];
+            for (let i = 0; i < keyPath.length - 1; i++) {
+                let cs = graph.get(keyPath[i]).get(keyPath[i + 1]);
+                const cur = coordStore.get(keyPath[i]);
+                if (Math.abs(cur[0] - cs[0][0]) > 0.0001 || Math.abs(cur[1] - cs[0][1]) > 0.0001) {
+                    cs = [...cs].reverse();
+                }
+                const start = i === 0 ? 0 : 1;
+                for (let j = start; j < cs.length; j++) coords.push(cs[j]);
+            }
+            return coords;
+        }
+
+        function cleanCoords(lngLats) {
+            const out = [lngLats[0]];
+            for (let i = 1; i < lngLats.length; i++) {
+                const p = out[out.length - 1], c = lngLats[i];
+                if (Math.abs(c[0] - p[0]) > 1e-7 || Math.abs(c[1] - p[1]) > 1e-7) out.push(c);
+            }
+            return out.length >= 2 ? out : lngLats.slice(0, 2);
+        }
+
+        function normalizePath(lngLats) {
+            if (lngLats.length < 2) return lngLats;
+            const dLat = lngLats[lngLats.length - 1][1] - lngLats[0][1];
+            const dLng = lngLats[lngLats.length - 1][0] - lngLats[0][0];
+            const shouldReverse = dLat < -1e-6 || (Math.abs(dLat) <= 1e-6 && dLng < 0);
+            return shouldReverse ? [...lngLats].reverse() : lngLats;
+        }
+
+        // ── Markers ───────────────────────────────────────────────────────────────
+
+        function svgPieIcon(modes, size) {
+            const r = size / 2 - 1;
+            const cx = size / 2, cy = size / 2;
+            const n = modes.length;
+            let inner = '';
+            if (n === 1) {
+                inner = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${COLORS[modes[0]]}"/>`;
+            } else {
+                for (let i = 0; i < n; i++) {
+                    const a1 = (i / n) * 2 * Math.PI - Math.PI / 2;
+                    const a2 = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2;
+                    const x1 = (cx + r * Math.cos(a1)).toFixed(3);
+                    const y1 = (cy + r * Math.sin(a1)).toFixed(3);
+                    const x2 = (cx + r * Math.cos(a2)).toFixed(3);
+                    const y2 = (cy + r * Math.sin(a2)).toFixed(3);
+                    const large = (1 / n) > 0.5 ? 1 : 0;
+                    inner += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${COLORS[modes[i]]}"/>`;
+                }
+            }
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">`
+                + inner
+                + `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="white" stroke-width="2"/>`
+                + `</svg>`;
+            return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+        }
+
+        function markerIcon(modes, size) {
+            return {
+                url: svgPieIcon(modes, size),
+                scaledSize: new google.maps.Size(size, size),
+                anchor: new google.maps.Point(size / 2, size / 2),
+            };
+        }
+
+        // ── Highlight ─────────────────────────────────────────────────────────────
+
+        const nodeMarkers   = new Map();
+        const edgePolylines = [];
+        let activeNodeId    = null;
+
+        function applyHighlight(nodeId) {
+            const connected = edgePolylines.filter(({ edge }) => edge.a === nodeId || edge.b === nodeId);
+            const connectedIds = new Set([nodeId]);
+            connected.forEach(({ edge }) => { connectedIds.add(edge.a); connectedIds.add(edge.b); });
+            const connectedEdgeSet = new Set(connected.map(({ edge }) => edge));
+            for (const { edge, plines } of edgePolylines) {
+                const on = connectedEdgeSet.has(edge);
+                plines.forEach(pl => pl.setOptions({ strokeOpacity: on ? 1 : 0.1, strokeWeight: on ? 7 : 3 }));
+            }
+            for (const [id, { marker, node }] of nodeMarkers) {
+                const size = id === nodeId ? 24 : connectedIds.has(id) ? 18 : 14;
+                marker.setIcon(markerIcon(node.modes, size));
+                marker.setOpacity(connectedIds.has(id) ? 1 : 0.25);
+            }
+        }
+
+        function resetHighlight() {
+            edgePolylines.forEach(({ plines }) =>
+                plines.forEach(pl => pl.setOptions({ strokeOpacity: 1, strokeWeight: 5 }))
+            );
+            nodeMarkers.forEach(({ marker, node }) => {
+                marker.setIcon(markerIcon(node.modes, 18));
+                marker.setOpacity(1);
+            });
+            activeNodeId = null;
+        }
+
+        // ── initMap ───────────────────────────────────────────────────────────────
+
+        function initMap() {
+            const map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: -41.288, lng: 174.777 },
+                zoom: 15,
+                styles: MAP_STYLE,
+                disableDefaultUI: true,
+                zoomControl: true,
+                gestureHandling: 'greedy',
+            });
+
+            map.addListener('click', () => { if (activeNodeId !== null) resetHighlight(); });
+
+            Promise.all([
+                fetch('../leaflet/export.geojson').then(r => r.json()),
+                fetch('../scenarios.json').then(r => r.json()),
+            ]).then(([geoData, { scenarios }]) => {
+                const roadFeatures = geoData.features.filter(f => f.geometry.type === 'LineString');
+
+                console.log('Building graph…');
+                const { graph, coordStore } = buildGraph(roadFeatures);
+                console.log(`Graph: ${graph.size} vertices`);
+
+                // Populate scenario selector
+                const select = document.getElementById('scenario-select');
+                scenarios.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    select.appendChild(opt);
+                });
+
+                function renderScenario({ nodes, edges }) {
+                    // Clear previous render
+                    nodeMarkers.forEach(({ marker }) => marker.setMap(null));
+                    nodeMarkers.clear();
+                    edgePolylines.forEach(({ plines }) => plines.forEach(pl => pl.setMap(null)));
+                    edgePolylines.length = 0;
+                    activeNodeId = null;
+
+                    console.log('Snapping nodes…');
+                    const nodeMap = new Map();
+                    for (const node of nodes) {
+                        const result = snapNodeToGraph(roadFeatures, graph, coordStore, node.lat, node.lng);
+                        if (!result) { console.warn(`No snap for ${node.id}`); continue; }
+                        node.graphKey     = result.key;
+                        node.snappedCoord = result.coord;
+                        nodeMap.set(node.id, node);
+                    }
+
+                    console.log('Routing edges…');
+                    for (const edge of edges) {
+                        const nodeA = nodeMap.get(edge.a);
+                        const nodeB = nodeMap.get(edge.b);
+                        if (!nodeA || !nodeB) continue;
+
+                        const keyPath = aStar(graph, coordStore, nodeA.graphKey, nodeB.graphKey);
+                        if (!keyPath) { console.warn(`No path: ${edge.a} → ${edge.b}`); continue; }
+
+                        const lngLats = normalizePath(cleanCoords(pathCoords(keyPath, graph, coordStore)));
+                        const line    = turf.lineString(lngLats);
+                        const plines  = [];
+
+                        for (const mode of edge.modes) {
+                            const offsetM = MODE_OFFSET_M[mode];
+                            let geom = line;
+                            if (offsetM !== 0) {
+                                try {
+                                    const off = turf.lineOffset(line, offsetM, { units: 'meters' });
+                                    const cs  = off?.geometry?.coordinates;
+                                    if (cs?.length >= 2 && cs.every(([x, y]) => isFinite(x) && isFinite(y))) geom = off;
+                                } catch (e) { /* fall back to centreline */ }
+                            }
+                            const path = geom.geometry.coordinates.map(([lng, lat]) => ({ lat, lng }));
+                            const pl = new google.maps.Polyline({
+                                path,
+                                map,
+                                strokeColor:   COLORS[mode],
+                                strokeWeight:  5,
+                                strokeOpacity: 1,
+                            });
+                            plines.push(pl);
+                        }
+                        edgePolylines.push({ edge, plines });
+                    }
+
+                    console.log('Rendering nodes…');
+                    for (const node of nodes) {
+                        if (!node.snappedCoord) continue;
+                        const [sLng, sLat] = node.snappedCoord;
+                        const marker = new google.maps.Marker({
+                            position: { lat: sLat, lng: sLng },
+                            map,
+                            icon:   markerIcon(node.modes, 18),
+                            title:  node.label,
+                            zIndex: 10,
+                        });
+                        marker.addListener('click', () => {
+                            if (activeNodeId === node.id) { resetHighlight(); return; }
+                            activeNodeId = node.id;
+                            applyHighlight(node.id);
+                        });
+                        nodeMarkers.set(node.id, { marker, node });
+                    }
+                    window.__mapDone = performance.now();
+                    console.log('Done.');
+                }
+
+                const initialId = new URLSearchParams(location.search).get('scenario') ?? scenarios[0].id;
+                const initial = scenarios.find(s => s.id === initialId) ?? scenarios[0];
+                select.value = initial.id;
+                renderScenario(initial);
+
+                select.addEventListener('change', () => {
+                    const s = scenarios.find(s => s.id === select.value);
+                    if (s) renderScenario(s);
+                });
+            });
+        }
+    </script>
+
+    <script>
+        function showKeyError() {
+            document.getElementById('map').innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#111;color:#aaa;font-family:system-ui,sans-serif;flex-direction:column;gap:12px">'
+                + '<div style="font-size:1.2rem;color:#ef233c">Google Maps API key missing</div>'
+                + '<div style="font-size:0.85rem;max-width:400px;text-align:center;line-height:1.6">'
+                + 'Create <code style="background:#1c1c1c;padding:2px 6px;border-radius:3px">googlemaps/env</code> with:<br>'
+                + '<code style="background:#1c1c1c;padding:2px 6px;border-radius:3px">GOOGLE_MAPS_API_KEY=your_key_here</code>'
+                + '</div></div>';
+        }
+
+        fetch('env')
+            .then(r => r.text())
+            .then(text => {
+                const env = {};
+                text.split('\n').forEach(line => {
+                    line = line.trim();
+                    if (line && !line.startsWith('#') && line.includes('=')) {
+                        const [k, ...v] = line.split('=');
+                        env[k.trim()] = v.join('=').trim();
+                    }
+                });
+                const key = env['GOOGLE_MAPS_API_KEY'] ?? '';
+                if (!key) { showKeyError(); return; }
+                const script = document.createElement('script');
+                script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&callback=initMap`;
+                script.async = true;
+                script.defer = true;
+                script.onerror = showKeyError;
+                document.head.appendChild(script);
+            })
+            .catch(showKeyError);
+    </script>
+</body>
+</html>

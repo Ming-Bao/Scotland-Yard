@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scotland Yard — Map API Evaluation</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg:        #111;
+            --surface:   #1a1a1a;
+            --border:    #2a2a2a;
+            --text:      #e4e4e4;
+            --muted:     #777;
+            --google:    #4285F4;
+            --leaflet:   #33a532;
+            --maplibre:  #f77f00;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* ── Header ─────────────────────────────────────────────── */
+        header {
+            padding: 2.5rem 3rem 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+        header p {
+            color: var(--muted);
+            font-size: 0.875rem;
+            margin-top: 0.3rem;
+        }
+
+        /* ── Layout ─────────────────────────────────────────────── */
+        main {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 2.5rem 3rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        section-title {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 1.25rem;
+        }
+
+        /* ── Radar chart ────────────────────────────────────────── */
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 2rem 2.5rem;
+            display: flex;
+            align-items: center;
+            gap: 3.5rem;
+            flex-wrap: wrap;
+        }
+        .chart-canvas-wrap {
+            flex: 0 0 380px;
+        }
+        .chart-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .legend-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 4px;
+        }
+        .legend-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .legend-total {
+            font-size: 0.8rem;
+            color: var(--muted);
+            margin-top: 1px;
+        }
+        .legend-bars {
+            margin-top: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .legend-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+        .legend-bar-track {
+            flex: 0 0 90px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .legend-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+
+        /* ── Criteria table ─────────────────────────────────────── */
+        .table-wrap {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+        thead th {
+            padding: 0.6rem 1rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+        thead th.api-col {
+            text-align: center;
+        }
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+        tbody tr:hover { background: rgba(255,255,255,0.025); }
+        tbody tr:last-child { border-bottom: none; }
+        td {
+            padding: 1.1rem 1rem;
+            vertical-align: top;
+        }
+        .crit-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            line-height: 1.3;
+        }
+        .crit-sub {
+            font-size: 0.75rem;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .api-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            text-align: center;
+        }
+        .score-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .s1 { background: rgba(239,35,60,0.18);   color: #ef233c; }
+        .s2 { background: rgba(244,162,97,0.18);   color: #f4a261; }
+        .s3 { background: rgba(233,196,106,0.18);  color: #e9c46a; }
+        .s4 { background: rgba(82,183,136,0.18);   color: #52b788; }
+        .s5 { background: rgba(45,198,83,0.18);    color: #2dc653; }
+        .cell-note {
+            font-size: 0.77rem;
+            color: var(--muted);
+            max-width: 190px;
+            line-height: 1.45;
+        }
+
+        tfoot tr {
+            border-top: 2px solid var(--border);
+            background: var(--surface);
+        }
+        tfoot th {
+            padding: 1rem;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        tfoot td {
+            padding: 1rem;
+            text-align: center;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+        .total-g { color: var(--google); }
+        .total-l { color: var(--leaflet); }
+        .total-m { color: var(--maplibre); }
+
+        /* ── API name chips in thead ────────────────────────────── */
+        .api-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: none;
+            color: var(--text);
+        }
+        .api-chip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        /* ── Benchmark section ──────────────────────────────────── */
+        .benchmark-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .bench-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+        }
+        .bench-card h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 0.9rem;
+        }
+        .bench-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.65rem;
+        }
+        .bench-lib {
+            font-size: 0.82rem;
+            font-weight: 600;
+            width: 96px;
+            flex-shrink: 0;
+        }
+        .bench-bar-track {
+            flex: 1;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .bench-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.4s;
+        }
+        .bench-val {
+            font-size: 0.8rem;
+            color: var(--muted);
+            width: 80px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .bench-timeout {
+            font-size: 0.78rem;
+            color: #ef233c;
+            font-style: italic;
+        }
+        .bench-note {
+            margin-top: 0.8rem;
+            font-size: 0.75rem;
+            color: var(--muted);
+            line-height: 1.5;
+            border-top: 1px solid var(--border);
+            padding-top: 0.7rem;
+        }
+        sup {
+            font-size: 0.65rem;
+            color: var(--muted);
+            vertical-align: super;
+            line-height: 0;
+        }
+
+        .callout {
+            background: rgba(247,127,0,0.07);
+            border: 1px solid rgba(247,127,0,0.25);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        .callout strong { color: #f77f00; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Scotland Yard — Map API Evaluation</h1>
+        <p>Wellington, New Zealand · Comparison of Google Maps, Leaflet, and MapLibre GL for game map rendering</p>
+    </header>
+
+    <main>
+        <!-- ── Radar chart ─────────────────────────────────────── -->
+        <section>
+            <section-title>Criteria overview</section-title>
+            <div class="chart-card">
+                <div class="chart-canvas-wrap">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <!-- Google Maps -->
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background:var(--google)"></div>
+                        <div>
+                            <div class="legend-name">Google Maps</div>
+                            <div class="legend-total">15 / 25</div>
+                            <div class="legend-bars">
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Performance</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:60%;background:var(--google)"></div></div>
+                                    <span>3</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Cost</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:20%;background:var(--google)"></div></div>
+                                    <span>1</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">License</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:60%;background:var(--google)"></div></div>
+                                    <span>3</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Styling</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:60%;background:var(--google)"></div></div>
+                                    <span>3</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Lib Quality</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--google)"></div></div>
+                                    <span>5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leaflet -->
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background:var(--leaflet)"></div>
+                        <div>
+                            <div class="legend-name">Leaflet</div>
+                            <div class="legend-total">21 / 25</div>
+                            <div class="legend-bars">
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Performance</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--leaflet)"></div></div>
+                                    <span>5</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Cost</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--leaflet)"></div></div>
+                                    <span>5</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">License</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--leaflet)"></div></div>
+                                    <span>5</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Styling</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:80%;background:var(--leaflet)"></div></div>
+                                    <span>4</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Lib Quality</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:40%;background:var(--leaflet)"></div></div>
+                                    <span>2</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MapLibre -->
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background:var(--maplibre)"></div>
+                        <div>
+                            <div class="legend-name">MapLibre GL</div>
+                            <div class="legend-total">24 / 25</div>
+                            <div class="legend-bars">
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Performance</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:80%;background:var(--maplibre)"></div></div>
+                                    <span>4</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Cost</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--maplibre)"></div></div>
+                                    <span>5</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">License</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--maplibre)"></div></div>
+                                    <span>5</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Styling</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--maplibre)"></div></div>
+                                    <span>5</span>
+                                </div>
+                                <div class="legend-bar-row">
+                                    <span style="width:88px">Lib Quality</span>
+                                    <div class="legend-bar-track"><div class="legend-bar-fill" style="width:100%;background:var(--maplibre)"></div></div>
+                                    <span>5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Score scale ───────────────────────────────────── -->
+        <section>
+            <section-title>Scoring scale</section-title>
+            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:stretch;">
+                <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;display:flex;gap:0.75rem;align-items:flex-start;">
+                    <div class="score-badge s1" style="flex-shrink:0">1</div>
+                    <div>
+                        <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Poor</div>
+                        <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">A significant barrier — the library fails this criterion or imposes a major cost, restriction, or risk.</div>
+                    </div>
+                </div>
+                <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;display:flex;gap:0.75rem;align-items:flex-start;">
+                    <div class="score-badge s2" style="flex-shrink:0">2</div>
+                    <div>
+                        <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Below average</div>
+                        <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Notable limitations that require workarounds or result in a meaningfully worse outcome.</div>
+                    </div>
+                </div>
+                <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;display:flex;gap:0.75rem;align-items:flex-start;">
+                    <div class="score-badge s3" style="flex-shrink:0">3</div>
+                    <div>
+                        <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Adequate</div>
+                        <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Meets project requirements without distinction — usable, but with clear trade-offs compared to alternatives.</div>
+                    </div>
+                </div>
+                <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;display:flex;gap:0.75rem;align-items:flex-start;">
+                    <div class="score-badge s4" style="flex-shrink:0">4</div>
+                    <div>
+                        <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Good</div>
+                        <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Exceeds requirements in meaningful ways. Minor limitations that are unlikely to affect this project.</div>
+                    </div>
+                </div>
+                <div style="flex:1;min-width:140px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem 1.25rem;display:flex;gap:0.75rem;align-items:flex-start;">
+                    <div class="score-badge s5" style="flex-shrink:0">5</div>
+                    <div>
+                        <div style="font-weight:600;font-size:0.85rem;margin-bottom:2px">Excellent</div>
+                        <div style="font-size:0.76rem;color:var(--muted);line-height:1.5">Best-in-class for this criterion. No meaningful limitations relevant to this project's scope.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Detailed table ─────────────────────────────────── -->
+        <section>
+            <section-title>Detailed scores</section-title>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width:22%">Criterion</th>
+                            <th class="api-col" style="width:26%">
+                                <span class="api-chip">
+                                    <span class="api-chip-dot" style="background:var(--google)"></span>
+                                    Google Maps
+                                </span>
+                            </th>
+                            <th class="api-col" style="width:26%">
+                                <span class="api-chip">
+                                    <span class="api-chip-dot" style="background:var(--leaflet)"></span>
+                                    Leaflet
+                                </span>
+                            </th>
+                            <th class="api-col" style="width:26%">
+                                <span class="api-chip">
+                                    <span class="api-chip-dot" style="background:var(--maplibre)"></span>
+                                    MapLibre GL
+                                </span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Performance -->
+                        <tr>
+                            <td>
+                                <div class="crit-name">Performance</div>
+                                <div class="crit-sub">Render speed — Firefox headless, HTTP cache disabled, 1 warmup + 10 runs, navigation start → "Done."</div>
+                            </td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s3">3</div>
+                                <div class="cell-note">Slowest at both scales: 0.70 s mean at baseline and 2.69 s at the 200-node stress test. Consistent run-to-run variance (stdev 0.045 s, 0.072 s) but slower than both alternatives throughout. <sup>[11]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">Fastest at both scales: 0.23 s mean at baseline (stdev 0.023 s, tightest of all three) and 2.21 s at the 200-node stress test. Consistent across all 10 runs — DOM rendering is not the limiting factor at Scotland Yard game scale. <sup>[11]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s4">4</div>
+                                <div class="cell-note">Second at both scales: 0.40 s mean at baseline and 2.31 s at stress. Most consistent under load (stdev 0.030 s at stress, lowest of all three), but the WebGL advantage does not overcome Leaflet's lead at either measured scale. <sup>[11]</sup></div>
+                            </div></td>
+                        </tr>
+
+                        <!-- Cost -->
+                        <tr>
+                            <td>
+                                <div class="crit-name">Cost</div>
+                                <div class="crit-sub">Licensing and usage fees at game scale</div>
+                            </td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s1">1</div>
+                                <div class="cell-note">~$7 USD per 1,000 Dynamic Map loads after a $200/month free tier. Requires a billing account and active API key for any deployment. <sup>[1]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">Open source — no library fees. CartoDB tiles used in the demo are free for non-commercial and low-traffic use cases.</div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">Open source — no library fees. Supports the same free tile providers as Leaflet, including CartoDB and any self-hosted tile server.</div>
+                            </div></td>
+                        </tr>
+
+                        <!-- License -->
+                        <tr>
+                            <td>
+                                <div class="crit-name">License</div>
+                                <div class="crit-sub">Usage rights, open source, offline capability</div>
+                            </td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s3">3</div>
+                                <div class="cell-note">Proprietary ToS — tile caching and self-hosting are prohibited. For this non-commercial university project the offline and redistribution restrictions are not a practical concern. <sup>[2]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">BSD-2-Clause. Highly permissive — commercial use, modification, and redistribution all allowed without restriction. <sup>[3]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">BSD-3-Clause. Open-source community fork of Mapbox GL JS v1.13, created after Mapbox switched to a proprietary licence in December 2020. Fully permissive for all use cases. <sup>[6][9][10]</sup></div>
+                            </div></td>
+                        </tr>
+
+                        <!-- Styling & Adaptability -->
+                        <tr>
+                            <td>
+                                <div class="crit-name">Styling &amp; Adaptability</div>
+                                <div class="crit-sub">Visual rendering control, basemap flexibility, game-specific extension</div>
+                            </td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s3">3</div>
+                                <div class="cell-note">The JSON styling API controls colours and feature visibility — sufficient for the dark game aesthetic — but the basemap is locked to Google's infrastructure. Tile providers cannot be swapped and the renderer cannot be overridden.</div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s4">4</div>
+                                <div class="cell-note">Tile provider is freely swappable (any XYZ/TMS source, self-hosted), and 551+ plugins cover game-specific needs including custom HTML markers and GeoJSON overlays. Visual customisation is shallow — appearance is primarily determined by the tile provider, not by library-level rendering control. <sup>[4]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">Full GL Style Specification gives complete rendering control: data-driven expressions, custom sprite sheets, feature-level filtering, and any tile source including self-hosted. Best-in-class adaptability for a custom game board aesthetic. <sup>[8]</sup></div>
+                            </div></td>
+                        </tr>
+
+                        <!-- Library Quality -->
+                        <tr>
+                            <td>
+                                <div class="crit-name">Library Quality</div>
+                                <div class="crit-sub">Release cadence, contributor bus factor, open issues, known CVEs</div>
+                            </td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">Quarterly stable releases on a predictable schedule; served directly by Google so no npm CVE surface. Security concerns are API-key management at the configuration level, not library bugs.</div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s2">2</div>
+                                <div class="cell-note">Last stable release v1.9.4 was May 2023 — approaching 3 years old. Extreme bus factor: lead maintainer (mourner) holds 3,698 commits vs 440 for the next contributor. <strong>CVE-2025-69993</strong>: medium-severity XSS in <code>bindPopup()</code>, affects all v1.x, no patch in the stable branch. Snyk health 70/100; 549 open issues. <sup>[5][12][13]</sup></div>
+                            </div></td>
+                            <td><div class="api-cell">
+                                <div class="score-badge s5">5</div>
+                                <div class="cell-note">No known CVEs; Snyk health 93/100. Active v5 stable line with v6 in pre-release. Contributors are distributed (top human contributors split 1,621 / 1,262 / 1,112 / 478 commits — no single-person dominance). 370 open issues with regular triage. <sup>[7][14]</sup></div>
+                            </div></td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th>Total Score</th>
+                            <td class="total-g">15 / 25</td>
+                            <td class="total-l">21 / 25</td>
+                            <td class="total-m">24 / 25</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+        <!-- ── Performance benchmarks ─────────────────────────── -->
+        <section>
+            <section-title>Performance benchmarks — Firefox headless, 1 warmup + 10 runs · HTTP cache disabled · time to first render (navigation start → "Done.")</section-title>
+            <div class="benchmark-grid">
+
+                <!-- Baseline -->
+                <div class="bench-card">
+                    <h3>Baseline — 4 nodes, 4 edges</h3>
+
+                    <div class="bench-row">
+                        <span class="bench-lib" style="color:var(--google)">Google Maps</span>
+                        <div class="bench-bar-track">
+                            <div class="bench-bar-fill" id="b-gm-base" style="width:0%;background:var(--google)"></div>
+                        </div>
+                        <span class="bench-val" id="v-gm-base">—</span>
+                    </div>
+                    <div class="bench-row">
+                        <span class="bench-lib" style="color:var(--leaflet)">Leaflet</span>
+                        <div class="bench-bar-track">
+                            <div class="bench-bar-fill" id="b-l-base" style="width:0%;background:var(--leaflet)"></div>
+                        </div>
+                        <span class="bench-val" id="v-l-base">—</span>
+                    </div>
+                    <div class="bench-row">
+                        <span class="bench-lib" style="color:var(--maplibre)">MapLibre GL</span>
+                        <div class="bench-bar-track">
+                            <div class="bench-bar-fill" id="b-m-base" style="width:0%;background:var(--maplibre)"></div>
+                        </div>
+                        <span class="bench-val" id="v-m-base">—</span>
+                    </div>
+                    <div class="bench-note" id="note-base">
+                        Run <code>python3 time_maps.py</code> to populate benchmarks.
+                    </div>
+                </div>
+
+                <!-- Stress -->
+                <div class="bench-card">
+                    <h3>Stress — 200 nodes, 285 edges</h3>
+
+                    <div class="bench-row">
+                        <span class="bench-lib" style="color:var(--google)">Google Maps</span>
+                        <div class="bench-bar-track">
+                            <div class="bench-bar-fill" id="b-gm-stress" style="width:0%;background:var(--google)"></div>
+                        </div>
+                        <span class="bench-val" id="v-gm-stress">—</span>
+                    </div>
+                    <div class="bench-row">
+                        <span class="bench-lib" style="color:var(--leaflet)">Leaflet</span>
+                        <div class="bench-bar-track">
+                            <div class="bench-bar-fill" id="b-l-stress" style="width:0%;background:var(--leaflet)"></div>
+                        </div>
+                        <span class="bench-val" id="v-l-stress">—</span>
+                    </div>
+                    <div class="bench-row">
+                        <span class="bench-lib" style="color:var(--maplibre)">MapLibre GL</span>
+                        <div class="bench-bar-track">
+                            <div class="bench-bar-fill" id="b-m-stress" style="width:0%;background:var(--maplibre)"></div>
+                        </div>
+                        <span class="bench-val" id="v-m-stress">—</span>
+                    </div>
+                    <div class="bench-note" id="note-stress">
+                        200 nodes sampled from actual Wellington road endpoints (seed=42).
+                    </div>
+                </div>
+            </div>
+
+            <div class="callout" id="bench-finding" style="margin-top:1rem">
+                <strong>Note:</strong> Run <code>python3 time_maps.py</code> from this directory
+                to measure render times. Results load automatically from <code>timing_results.json</code>.
+                Google Maps timing requires a <code>googlemaps/env</code> file containing
+                <code>GOOGLE_MAPS_API_KEY=your_key</code>.
+            </div>
+        </section>
+
+        <!-- ── References ────────────────────────────────────── -->
+        <section>
+            <section-title>References</section-title>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;font-size:0.82rem;line-height:1.6;">
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[1]</span>
+                    <span>Google LLC. <em>Google Maps Platform pricing.</em>
+                    <a href="https://developers.google.com/maps/billing-and-pricing/pricing" style="color:#4285F4;text-decoration:none">developers.google.com/maps/billing-and-pricing/pricing</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[2]</span>
+                    <span>Google LLC. <em>Google Maps Platform Service Specific Terms.</em>
+                    <a href="https://cloud.google.com/maps-platform/terms/maps-service-terms" style="color:#4285F4;text-decoration:none">cloud.google.com/maps-platform/terms/maps-service-terms</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[3]</span>
+                    <span>Agafonkin, V. <em>Leaflet — BSD 2-Clause licence.</em>
+                    <a href="https://github.com/Leaflet/Leaflet/blob/main/LICENSE" style="color:#33a532;text-decoration:none">github.com/Leaflet/Leaflet/blob/main/LICENSE</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[4]</span>
+                    <span>Leaflet contributors. <em>Leaflet plugin directory (551+ plugins).</em>
+                    <a href="https://leafletjs.com/plugins.html" style="color:#33a532;text-decoration:none">leafletjs.com/plugins.html</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[5]</span>
+                    <span>Leaflet contributors. <em>Leaflet GitHub releases — v1.9.4 latest stable; v2.0.0-alpha in development.</em>
+                    <a href="https://github.com/Leaflet/Leaflet/releases" style="color:#33a532;text-decoration:none">github.com/Leaflet/Leaflet/releases</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[6]</span>
+                    <span>MapLibre contributors. <em>MapLibre GL JS — BSD 3-Clause licence.</em>
+                    <a href="https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt" style="color:#f77f00;text-decoration:none">github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[7]</span>
+                    <span>MapLibre contributors. <em>MapLibre GL JS GitHub releases.</em>
+                    <a href="https://github.com/maplibre/maplibre-gl-js/releases" style="color:#f77f00;text-decoration:none">github.com/maplibre/maplibre-gl-js/releases</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[8]</span>
+                    <span>MapLibre contributors. <em>MapLibre GL Style Specification.</em>
+                    <a href="https://maplibre.org/maplibre-style-spec/" style="color:#f77f00;text-decoration:none">maplibre.org/maplibre-style-spec/</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[9]</span>
+                    <span>MapTiler. <em>MapLibre — the open-source fork of Mapbox GL.</em> January 2021.
+                    <a href="https://www.maptiler.com/news/2021/01/maplibre-mapbox-gl-open-source-fork/" style="color:#f77f00;text-decoration:none">maptiler.com/news/2021/01/maplibre-mapbox-gl-open-source-fork/</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[10]</span>
+                    <span>Mapbox. <em>mapbox-gl-js issue #10162 — licence change discussion.</em> December 2020.
+                    <a href="https://github.com/mapbox/mapbox-gl-js/issues/10162" style="color:#f77f00;text-decoration:none">github.com/mapbox/mapbox-gl-js/issues/10162</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[11]</span>
+                    <span>Bao, M. <em>Headless browser benchmark — Firefox headless, Selenium, HTTP cache disabled, 1 warmup + 10 measured runs per scenario. Wellington road network from OpenStreetMap contributors.</em> ENGR489, Victoria University of Wellington, 2026. Source: <code>time_maps.py</code> + <code>timing_results.json</code> in this repository.</span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[12]</span>
+                    <span>GitHub API. <em>Leaflet/Leaflet repository metadata, releases, and contributors.</em>
+                    <a href="https://api.github.com/repos/Leaflet/Leaflet" style="color:#33a532;text-decoration:none">api.github.com/repos/Leaflet/Leaflet</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[13]</span>
+                    <span>GitHub Security Advisory. <em>CVE-2025-69993 — Cross-site scripting in Leaflet bindPopup (GHSA-h5cx-hfj5-x8v3). Medium severity, CVSS 6.1. All v1.x affected; no stable-branch patch.</em>
+                    <a href="https://github.com/advisories/GHSA-h5cx-hfj5-x8v3" style="color:#33a532;text-decoration:none">github.com/advisories/GHSA-h5cx-hfj5-x8v3</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[14]</span>
+                    <span>GitHub API. <em>maplibre/maplibre-gl-js repository metadata, releases, and contributors.</em>
+                    <a href="https://api.github.com/repos/maplibre/maplibre-gl-js" style="color:#f77f00;text-decoration:none">api.github.com/repos/maplibre/maplibre-gl-js</a></span>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1.8rem 1fr;gap:0 0.5rem;align-items:baseline;">
+                    <span style="color:var(--muted);text-align:right">[15]</span>
+                    <span>Snyk. <em>Security and health scores — leaflet (70/100) and maplibre-gl (93/100).</em>
+                    <a href="https://security.snyk.io/package/npm/leaflet" style="color:#33a532;text-decoration:none">security.snyk.io/package/npm/leaflet</a> ·
+                    <a href="https://security.snyk.io/package/npm/maplibre-gl" style="color:#f77f00;text-decoration:none">security.snyk.io/package/npm/maplibre-gl</a></span>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Performance', 'Cost', 'License', 'Styling &\nAdaptability', 'Library\nQuality'],
+                datasets: [
+                    {
+                        label: 'Google Maps',
+                        data: [3, 1, 3, 3, 5],
+                        borderColor: '#4285F4',
+                        backgroundColor: 'rgba(66,133,244,0.12)',
+                        pointBackgroundColor: '#4285F4',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: 'Leaflet',
+                        data: [5, 5, 5, 4, 2],
+                        borderColor: '#33a532',
+                        backgroundColor: 'rgba(51,165,50,0.12)',
+                        pointBackgroundColor: '#33a532',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                    {
+                        label: 'MapLibre GL',
+                        data: [4, 5, 5, 5, 5],
+                        borderColor: '#f77f00',
+                        backgroundColor: 'rgba(247,127,0,0.12)',
+                        pointBackgroundColor: '#f77f00',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} / 5`,
+                        },
+                    },
+                },
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1,
+                            color: '#555',
+                            backdropColor: 'transparent',
+                            font: { size: 10 },
+                        },
+                        grid:        { color: '#2a2a2a' },
+                        angleLines:  { color: '#2a2a2a' },
+                        pointLabels: { color: '#bbb', font: { size: 12 } },
+                    },
+                },
+            },
+        });
+    </script>
+
+    <script>
+        // Load all benchmark bars from timing_results.json.
+        fetch('timing_results.json')
+            .then(r => r.json())
+            .then(data => {
+                const LIBS = [
+                    { key: 'Google Maps', barBase: 'b-gm-base',   valBase: 'v-gm-base',   barStress: 'b-gm-stress', valStress: 'v-gm-stress' },
+                    { key: 'Leaflet',     barBase: 'b-l-base',    valBase: 'v-l-base',     barStress: 'b-l-stress',  valStress: 'v-l-stress'  },
+                    { key: 'MapLibre GL', barBase: 'b-m-base',    valBase: 'v-m-base',     barStress: 'b-m-stress',  valStress: 'v-m-stress'  },
+                ];
+
+                // Determine max mean across available libs for each scenario
+                const means = scenario => LIBS.map(l => data?.[scenario]?.[l.key]?.mean).filter(v => v != null);
+                const baseMax   = Math.max(...means('baseline'), 0.01);
+                const stressMax = Math.max(...means('stress'),   0.01);
+
+                function fill(barId, valId, val, max) {
+                    if (val == null) return;
+                    document.getElementById(barId).style.width = `${Math.min(100, val / max * 100).toFixed(1)}%`;
+                    document.getElementById(valId).textContent = `${val.toFixed(2)} s mean`;
+                }
+
+                for (const lib of LIBS) {
+                    fill(lib.barBase,   lib.valBase,   data?.baseline?.[lib.key]?.mean, baseMax);
+                    fill(lib.barStress, lib.valStress, data?.stress?.[lib.key]?.mean,   stressMax);
+                }
+
+                // Update notes with min/max detail
+                function noteText(scenario) {
+                    return LIBS
+                        .filter(l => data?.[scenario]?.[l.key])
+                        .map(l => {
+                            const r = data[scenario][l.key];
+                            return `${l.key}: min ${r.min} s / max ${r.max} s`;
+                        })
+                        .join(' &nbsp;·&nbsp; ');
+                }
+                const baseNote = noteText('baseline');
+                if (baseNote) document.getElementById('note-base').innerHTML = baseNote
+                    + (data?.baseline?.['Google Maps'] == null
+                        ? ' &nbsp;·&nbsp; <em>Google Maps: no API key — create <code>googlemaps/env</code> with <code>GOOGLE_MAPS_API_KEY=…</code> and rerun <code>python3 time_maps.py</code></em>'
+                        : '');
+
+                const stressNote = noteText('stress');
+                if (stressNote) document.getElementById('note-stress').innerHTML = stressNote
+                    + (data?.stress?.['Google Maps'] == null
+                        ? ' &nbsp;·&nbsp; <em>Google Maps: no API key</em>'
+                        : '')
+                    + '. 200 nodes sampled from actual Wellington road endpoints (seed=42).';
+
+                // Update finding callout with measured numbers
+                const gmBase   = data?.baseline?.['Google Maps']?.mean;
+                const lBase    = data?.baseline?.['Leaflet']?.mean;
+                const mBase    = data?.baseline?.['MapLibre GL']?.mean;
+                const gmStress = data?.stress?.['Google Maps']?.mean;
+                const lStress  = data?.stress?.['Leaflet']?.mean;
+                const mStress  = data?.stress?.['MapLibre GL']?.mean;
+                if (lBase != null && mBase != null && lStress != null && mStress != null) {
+                    const stressMeans = [gmStress, lStress, mStress].filter(v => v != null);
+                    const stressLo = Math.min(...stressMeans).toFixed(2);
+                    const stressHi = Math.max(...stressMeans).toFixed(2);
+                    const gmNote = gmBase != null
+                        ? `Google Maps is slowest at baseline (${gmBase.toFixed(2)} s mean) with high first-run variance from API initialisation. `
+                        : '';
+                    document.getElementById('bench-finding').innerHTML =
+                        `<strong>Finding:</strong> Leaflet is fastest at the baseline scale (${lBase.toFixed(2)} s mean), `
+                        + `ahead of MapLibre GL (${mBase.toFixed(2)} s) by a modest ${(mBase - lBase).toFixed(2)} s. `
+                        + gmNote
+                        + `At the 200-node stress scale all libraries complete in ${stressLo}–${stressHi} s — `
+                        + `the bottleneck is the shared A* road-snapping computation, not the rendering library itself. `
+                        + `MapLibre GL is most consistent under load (${mStress.toFixed(2)} s mean, lowest variance); `
+                        + `Leaflet performs comparably at game-relevant node counts.`;
+                }
+            })
+            .catch(() => {});  // silently skip if file not served over file:// protocol
+    </script>
+</body>
+</html>

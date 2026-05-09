@@ -1,0 +1,4246 @@
+{
+  "scenarios": [
+    {
+      "id": "baseline",
+      "name": "Baseline \u2013 4 nodes",
+      "description": "Original 4 Wellington locations used in all initial demos",
+      "nodes": [
+        {
+          "id": "vuw",
+          "label": "VUW Kelburn",
+          "lat": -41.2866,
+          "lng": 174.7685,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "station",
+          "label": "Wellington Railway Station",
+          "lat": -41.2786,
+          "lng": 174.7798,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "tepapa",
+          "label": "Te Papa Tongarewa",
+          "lat": -41.2906,
+          "lng": 174.7824,
+          "modes": [
+            "scooter",
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "courtney",
+          "label": "Courtney Place",
+          "lat": -41.2952,
+          "lng": 174.7788,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "a": "vuw",
+          "b": "station",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "station",
+          "b": "tepapa",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "tepapa",
+          "b": "courtney",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "courtney",
+          "b": "vuw",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "medium",
+      "name": "Medium \u2013 12 nodes",
+      "description": "12 Wellington CBD and inner-suburb locations with a denser edge network for load testing",
+      "nodes": [
+        {
+          "id": "vuw",
+          "label": "VUW Kelburn",
+          "lat": -41.2866,
+          "lng": 174.7685,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "station",
+          "label": "Wellington Railway Station",
+          "lat": -41.2786,
+          "lng": 174.7798,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "tepapa",
+          "label": "Te Papa Tongarewa",
+          "lat": -41.2906,
+          "lng": 174.7824,
+          "modes": [
+            "scooter",
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "courtney",
+          "label": "Courtney Place",
+          "lat": -41.2952,
+          "lng": 174.7788,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "lambton",
+          "label": "Lambton Quay",
+          "lat": -41.2798,
+          "lng": 174.7762,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "frankkitts",
+          "label": "Frank Kitts Park",
+          "lat": -41.2851,
+          "lng": 174.7882,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "cuba",
+          "label": "Cuba Street Mall",
+          "lat": -41.2937,
+          "lng": 174.7767,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "newtown",
+          "label": "Newtown",
+          "lat": -41.303,
+          "lng": 174.7847,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "terrace",
+          "label": "The Terrace",
+          "lat": -41.2838,
+          "lng": 174.7752,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "ferry",
+          "label": "Ferry Terminal",
+          "lat": -41.2752,
+          "lng": 174.7841,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "mtvic",
+          "label": "Mount Victoria Lookout",
+          "lat": -41.298,
+          "lng": 174.7912,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "botanic",
+          "label": "Botanic Garden",
+          "lat": -41.284,
+          "lng": 174.766,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "a": "vuw",
+          "b": "station",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "station",
+          "b": "tepapa",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "tepapa",
+          "b": "courtney",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "courtney",
+          "b": "vuw",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "lambton",
+          "b": "station",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "lambton",
+          "b": "terrace",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "lambton",
+          "b": "ferry",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "frankkitts",
+          "b": "tepapa",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "frankkitts",
+          "b": "ferry",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "cuba",
+          "b": "courtney",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "cuba",
+          "b": "terrace",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "newtown",
+          "b": "tepapa",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "newtown",
+          "b": "courtney",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "terrace",
+          "b": "vuw",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "ferry",
+          "b": "station",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "mtvic",
+          "b": "tepapa",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "mtvic",
+          "b": "courtney",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "botanic",
+          "b": "vuw",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stress",
+      "name": "Stress \u2013 200 nodes",
+      "description": "200 nodes sampled from actual Wellington road endpoints (seed=42, tight CBD bbox), 285 edges to 1\u20133 nearest neighbours.",
+      "nodes": [
+        {
+          "id": "n0",
+          "label": "Stop 1",
+          "lat": -41.297694,
+          "lng": 174.773255,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n1",
+          "label": "Stop 2",
+          "lat": -41.293629,
+          "lng": 174.771273,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n2",
+          "label": "Stop 3",
+          "lat": -41.272296,
+          "lng": 174.787131,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n3",
+          "label": "Stop 4",
+          "lat": -41.292904,
+          "lng": 174.766968,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n4",
+          "label": "Stop 5",
+          "lat": -41.292526,
+          "lng": 174.787266,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n5",
+          "label": "Stop 6",
+          "lat": -41.295864,
+          "lng": 174.787022,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n6",
+          "label": "Stop 7",
+          "lat": -41.283131,
+          "lng": 174.758271,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n7",
+          "label": "Stop 8",
+          "lat": -41.292172,
+          "lng": 174.760538,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n8",
+          "label": "Stop 9",
+          "lat": -41.289821,
+          "lng": 174.777331,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n9",
+          "label": "Stop 10",
+          "lat": -41.278881,
+          "lng": 174.76933,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n10",
+          "label": "Stop 11",
+          "lat": -41.286918,
+          "lng": 174.760616,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n11",
+          "label": "Stop 12",
+          "lat": -41.289399,
+          "lng": 174.775953,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n12",
+          "label": "Stop 13",
+          "lat": -41.2832,
+          "lng": 174.778074,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n13",
+          "label": "Stop 14",
+          "lat": -41.290431,
+          "lng": 174.780075,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n14",
+          "label": "Stop 15",
+          "lat": -41.292974,
+          "lng": 174.78412,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n15",
+          "label": "Stop 16",
+          "lat": -41.285623,
+          "lng": 174.769184,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n16",
+          "label": "Stop 17",
+          "lat": -41.298502,
+          "lng": 174.788352,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n17",
+          "label": "Stop 18",
+          "lat": -41.292289,
+          "lng": 174.784952,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n18",
+          "label": "Stop 19",
+          "lat": -41.279211,
+          "lng": 174.776951,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n19",
+          "label": "Stop 20",
+          "lat": -41.297917,
+          "lng": 174.775731,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n20",
+          "label": "Stop 21",
+          "lat": -41.29271,
+          "lng": 174.785244,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n21",
+          "label": "Stop 22",
+          "lat": -41.292814,
+          "lng": 174.774289,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n22",
+          "label": "Stop 23",
+          "lat": -41.294284,
+          "lng": 174.784887,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n23",
+          "label": "Stop 24",
+          "lat": -41.29607,
+          "lng": 174.770052,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n24",
+          "label": "Stop 25",
+          "lat": -41.278791,
+          "lng": 174.775625,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n25",
+          "label": "Stop 26",
+          "lat": -41.290423,
+          "lng": 174.758468,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n26",
+          "label": "Stop 27",
+          "lat": -41.282183,
+          "lng": 174.778787,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n27",
+          "label": "Stop 28",
+          "lat": -41.295938,
+          "lng": 174.78579,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n28",
+          "label": "Stop 29",
+          "lat": -41.284373,
+          "lng": 174.772717,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n29",
+          "label": "Stop 30",
+          "lat": -41.280446,
+          "lng": 174.777767,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n30",
+          "label": "Stop 31",
+          "lat": -41.2991,
+          "lng": 174.761828,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n31",
+          "label": "Stop 32",
+          "lat": -41.290103,
+          "lng": 174.771454,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n32",
+          "label": "Stop 33",
+          "lat": -41.297835,
+          "lng": 174.773699,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n33",
+          "label": "Stop 34",
+          "lat": -41.293471,
+          "lng": 174.770891,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n34",
+          "label": "Stop 35",
+          "lat": -41.290353,
+          "lng": 174.778171,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n35",
+          "label": "Stop 36",
+          "lat": -41.273163,
+          "lng": 174.775872,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n36",
+          "label": "Stop 37",
+          "lat": -41.27799,
+          "lng": 174.772767,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n37",
+          "label": "Stop 38",
+          "lat": -41.29448,
+          "lng": 174.774005,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n38",
+          "label": "Stop 39",
+          "lat": -41.298946,
+          "lng": 174.785822,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n39",
+          "label": "Stop 40",
+          "lat": -41.293792,
+          "lng": 174.775434,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n40",
+          "label": "Stop 41",
+          "lat": -41.287418,
+          "lng": 174.758017,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n41",
+          "label": "Stop 42",
+          "lat": -41.281412,
+          "lng": 174.770838,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n42",
+          "label": "Stop 43",
+          "lat": -41.291531,
+          "lng": 174.758853,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n43",
+          "label": "Stop 44",
+          "lat": -41.276843,
+          "lng": 174.772936,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n44",
+          "label": "Stop 45",
+          "lat": -41.277138,
+          "lng": 174.769995,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n45",
+          "label": "Stop 46",
+          "lat": -41.278204,
+          "lng": 174.764542,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n46",
+          "label": "Stop 47",
+          "lat": -41.28379,
+          "lng": 174.777742,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n47",
+          "label": "Stop 48",
+          "lat": -41.288746,
+          "lng": 174.771499,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n48",
+          "label": "Stop 49",
+          "lat": -41.275532,
+          "lng": 174.779803,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n49",
+          "label": "Stop 50",
+          "lat": -41.294011,
+          "lng": 174.783749,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n50",
+          "label": "Stop 51",
+          "lat": -41.274218,
+          "lng": 174.777169,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n51",
+          "label": "Stop 52",
+          "lat": -41.285572,
+          "lng": 174.773692,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n52",
+          "label": "Stop 53",
+          "lat": -41.277441,
+          "lng": 174.774527,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n53",
+          "label": "Stop 54",
+          "lat": -41.297533,
+          "lng": 174.765352,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n54",
+          "label": "Stop 55",
+          "lat": -41.281733,
+          "lng": 174.777902,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n55",
+          "label": "Stop 56",
+          "lat": -41.279849,
+          "lng": 174.759554,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n56",
+          "label": "Stop 57",
+          "lat": -41.283503,
+          "lng": 174.776899,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n57",
+          "label": "Stop 58",
+          "lat": -41.278499,
+          "lng": 174.782179,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n58",
+          "label": "Stop 59",
+          "lat": -41.281164,
+          "lng": 174.76402,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n59",
+          "label": "Stop 60",
+          "lat": -41.274719,
+          "lng": 174.774033,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n60",
+          "label": "Stop 61",
+          "lat": -41.298383,
+          "lng": 174.786159,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n61",
+          "label": "Stop 62",
+          "lat": -41.297158,
+          "lng": 174.771546,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n62",
+          "label": "Stop 63",
+          "lat": -41.275476,
+          "lng": 174.777831,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n63",
+          "label": "Stop 64",
+          "lat": -41.287914,
+          "lng": 174.778411,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n64",
+          "label": "Stop 65",
+          "lat": -41.292096,
+          "lng": 174.79088,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n65",
+          "label": "Stop 66",
+          "lat": -41.274688,
+          "lng": 174.762329,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n66",
+          "label": "Stop 67",
+          "lat": -41.288469,
+          "lng": 174.765392,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n67",
+          "label": "Stop 68",
+          "lat": -41.293276,
+          "lng": 174.760268,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n68",
+          "label": "Stop 69",
+          "lat": -41.289232,
+          "lng": 174.763206,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n69",
+          "label": "Stop 70",
+          "lat": -41.282036,
+          "lng": 174.776106,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n70",
+          "label": "Stop 71",
+          "lat": -41.28694,
+          "lng": 174.758668,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n71",
+          "label": "Stop 72",
+          "lat": -41.291164,
+          "lng": 174.779617,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n72",
+          "label": "Stop 73",
+          "lat": -41.27737,
+          "lng": 174.769785,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n73",
+          "label": "Stop 74",
+          "lat": -41.278358,
+          "lng": 174.768764,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n74",
+          "label": "Stop 75",
+          "lat": -41.299445,
+          "lng": 174.771886,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n75",
+          "label": "Stop 76",
+          "lat": -41.277402,
+          "lng": 174.769256,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n76",
+          "label": "Stop 77",
+          "lat": -41.27532,
+          "lng": 174.761791,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n77",
+          "label": "Stop 78",
+          "lat": -41.297273,
+          "lng": 174.787845,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n78",
+          "label": "Stop 79",
+          "lat": -41.288459,
+          "lng": 174.768075,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n79",
+          "label": "Stop 80",
+          "lat": -41.282656,
+          "lng": 174.778534,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n80",
+          "label": "Stop 81",
+          "lat": -41.296917,
+          "lng": 174.771268,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n81",
+          "label": "Stop 82",
+          "lat": -41.292094,
+          "lng": 174.773047,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n82",
+          "label": "Stop 83",
+          "lat": -41.287052,
+          "lng": 174.778265,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n83",
+          "label": "Stop 84",
+          "lat": -41.294007,
+          "lng": 174.770875,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n84",
+          "label": "Stop 85",
+          "lat": -41.298906,
+          "lng": 174.775271,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n85",
+          "label": "Stop 86",
+          "lat": -41.283262,
+          "lng": 174.762529,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n86",
+          "label": "Stop 87",
+          "lat": -41.296973,
+          "lng": 174.771047,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n87",
+          "label": "Stop 88",
+          "lat": -41.294401,
+          "lng": 174.783484,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n88",
+          "label": "Stop 89",
+          "lat": -41.291492,
+          "lng": 174.758221,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n89",
+          "label": "Stop 90",
+          "lat": -41.288733,
+          "lng": 174.770717,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n90",
+          "label": "Stop 91",
+          "lat": -41.289116,
+          "lng": 174.767319,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n91",
+          "label": "Stop 92",
+          "lat": -41.288787,
+          "lng": 174.776134,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n92",
+          "label": "Stop 93",
+          "lat": -41.297636,
+          "lng": 174.788999,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n93",
+          "label": "Stop 94",
+          "lat": -41.291724,
+          "lng": 174.762608,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n94",
+          "label": "Stop 95",
+          "lat": -41.280128,
+          "lng": 174.77636,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n95",
+          "label": "Stop 96",
+          "lat": -41.293125,
+          "lng": 174.791303,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n96",
+          "label": "Stop 97",
+          "lat": -41.290294,
+          "lng": 174.778069,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n97",
+          "label": "Stop 98",
+          "lat": -41.273533,
+          "lng": 174.781501,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n98",
+          "label": "Stop 99",
+          "lat": -41.294929,
+          "lng": 174.770006,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n99",
+          "label": "Stop 100",
+          "lat": -41.289365,
+          "lng": 174.77007,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n100",
+          "label": "Stop 101",
+          "lat": -41.285534,
+          "lng": 174.766969,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n101",
+          "label": "Stop 102",
+          "lat": -41.295724,
+          "lng": 174.767305,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n102",
+          "label": "Stop 103",
+          "lat": -41.284009,
+          "lng": 174.774369,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n103",
+          "label": "Stop 104",
+          "lat": -41.273094,
+          "lng": 174.781212,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n104",
+          "label": "Stop 105",
+          "lat": -41.296869,
+          "lng": 174.764795,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n105",
+          "label": "Stop 106",
+          "lat": -41.299695,
+          "lng": 174.782771,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n106",
+          "label": "Stop 107",
+          "lat": -41.28826,
+          "lng": 174.776224,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n107",
+          "label": "Stop 108",
+          "lat": -41.30002,
+          "lng": 174.781735,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n108",
+          "label": "Stop 109",
+          "lat": -41.27911,
+          "lng": 174.768906,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n109",
+          "label": "Stop 110",
+          "lat": -41.28629,
+          "lng": 174.76905,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n110",
+          "label": "Stop 111",
+          "lat": -41.295197,
+          "lng": 174.769229,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n111",
+          "label": "Stop 112",
+          "lat": -41.29941,
+          "lng": 174.779342,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n112",
+          "label": "Stop 113",
+          "lat": -41.294112,
+          "lng": 174.770812,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n113",
+          "label": "Stop 114",
+          "lat": -41.274845,
+          "lng": 174.775329,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n114",
+          "label": "Stop 115",
+          "lat": -41.288809,
+          "lng": 174.771261,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n115",
+          "label": "Stop 116",
+          "lat": -41.274882,
+          "lng": 174.775167,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n116",
+          "label": "Stop 117",
+          "lat": -41.292861,
+          "lng": 174.783866,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n117",
+          "label": "Stop 118",
+          "lat": -41.274875,
+          "lng": 174.775599,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n118",
+          "label": "Stop 119",
+          "lat": -41.29079,
+          "lng": 174.759265,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n119",
+          "label": "Stop 120",
+          "lat": -41.280974,
+          "lng": 174.766285,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n120",
+          "label": "Stop 121",
+          "lat": -41.295749,
+          "lng": 174.771958,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n121",
+          "label": "Stop 122",
+          "lat": -41.279751,
+          "lng": 174.7722,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n122",
+          "label": "Stop 123",
+          "lat": -41.296282,
+          "lng": 174.7706,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n123",
+          "label": "Stop 124",
+          "lat": -41.283587,
+          "lng": 174.762065,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n124",
+          "label": "Stop 125",
+          "lat": -41.288962,
+          "lng": 174.759436,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n125",
+          "label": "Stop 126",
+          "lat": -41.279147,
+          "lng": 174.77043,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n126",
+          "label": "Stop 127",
+          "lat": -41.290646,
+          "lng": 174.779946,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n127",
+          "label": "Stop 128",
+          "lat": -41.294005,
+          "lng": 174.779447,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n128",
+          "label": "Stop 129",
+          "lat": -41.291649,
+          "lng": 174.777573,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n129",
+          "label": "Stop 130",
+          "lat": -41.287239,
+          "lng": 174.758576,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n130",
+          "label": "Stop 131",
+          "lat": -41.281956,
+          "lng": 174.778586,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n131",
+          "label": "Stop 132",
+          "lat": -41.291394,
+          "lng": 174.766592,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n132",
+          "label": "Stop 133",
+          "lat": -41.285362,
+          "lng": 174.775991,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n133",
+          "label": "Stop 134",
+          "lat": -41.278866,
+          "lng": 174.776309,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n134",
+          "label": "Stop 135",
+          "lat": -41.297056,
+          "lng": 174.781987,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n135",
+          "label": "Stop 136",
+          "lat": -41.292923,
+          "lng": 174.77696,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n136",
+          "label": "Stop 137",
+          "lat": -41.289268,
+          "lng": 174.758308,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n137",
+          "label": "Stop 138",
+          "lat": -41.295385,
+          "lng": 174.767543,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n138",
+          "label": "Stop 139",
+          "lat": -41.282343,
+          "lng": 174.777571,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n139",
+          "label": "Stop 140",
+          "lat": -41.288208,
+          "lng": 174.77526,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n140",
+          "label": "Stop 141",
+          "lat": -41.296458,
+          "lng": 174.770635,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n141",
+          "label": "Stop 142",
+          "lat": -41.27695,
+          "lng": 174.777438,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n142",
+          "label": "Stop 143",
+          "lat": -41.279945,
+          "lng": 174.776172,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n143",
+          "label": "Stop 144",
+          "lat": -41.293648,
+          "lng": 174.774961,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n144",
+          "label": "Stop 145",
+          "lat": -41.293997,
+          "lng": 174.777965,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n145",
+          "label": "Stop 146",
+          "lat": -41.27735,
+          "lng": 174.783157,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n146",
+          "label": "Stop 147",
+          "lat": -41.279763,
+          "lng": 174.762742,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n147",
+          "label": "Stop 148",
+          "lat": -41.29351,
+          "lng": 174.774527,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n148",
+          "label": "Stop 149",
+          "lat": -41.286583,
+          "lng": 174.778172,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n149",
+          "label": "Stop 150",
+          "lat": -41.293561,
+          "lng": 174.771056,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n150",
+          "label": "Stop 151",
+          "lat": -41.281838,
+          "lng": 174.779044,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n151",
+          "label": "Stop 152",
+          "lat": -41.289562,
+          "lng": 174.7674,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n152",
+          "label": "Stop 153",
+          "lat": -41.297418,
+          "lng": 174.783102,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n153",
+          "label": "Stop 154",
+          "lat": -41.284171,
+          "lng": 174.775446,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n154",
+          "label": "Stop 155",
+          "lat": -41.292711,
+          "lng": 174.773943,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n155",
+          "label": "Stop 156",
+          "lat": -41.279366,
+          "lng": 174.759481,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n156",
+          "label": "Stop 157",
+          "lat": -41.289973,
+          "lng": 174.77759,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n157",
+          "label": "Stop 158",
+          "lat": -41.294789,
+          "lng": 174.786441,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n158",
+          "label": "Stop 159",
+          "lat": -41.293476,
+          "lng": 174.781169,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n159",
+          "label": "Stop 160",
+          "lat": -41.277271,
+          "lng": 174.771049,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n160",
+          "label": "Stop 161",
+          "lat": -41.299603,
+          "lng": 174.773669,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n161",
+          "label": "Stop 162",
+          "lat": -41.284694,
+          "lng": 174.776213,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n162",
+          "label": "Stop 163",
+          "lat": -41.293444,
+          "lng": 174.760792,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n163",
+          "label": "Stop 164",
+          "lat": -41.290062,
+          "lng": 174.780286,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n164",
+          "label": "Stop 165",
+          "lat": -41.272751,
+          "lng": 174.775252,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n165",
+          "label": "Stop 166",
+          "lat": -41.293703,
+          "lng": 174.76128,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n166",
+          "label": "Stop 167",
+          "lat": -41.299388,
+          "lng": 174.780243,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n167",
+          "label": "Stop 168",
+          "lat": -41.284983,
+          "lng": 174.777676,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n168",
+          "label": "Stop 169",
+          "lat": -41.278729,
+          "lng": 174.76932,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n169",
+          "label": "Stop 170",
+          "lat": -41.284855,
+          "lng": 174.771464,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n170",
+          "label": "Stop 171",
+          "lat": -41.293554,
+          "lng": 174.788346,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n171",
+          "label": "Stop 172",
+          "lat": -41.280401,
+          "lng": 174.778708,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n172",
+          "label": "Stop 173",
+          "lat": -41.292872,
+          "lng": 174.787635,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n173",
+          "label": "Stop 174",
+          "lat": -41.276977,
+          "lng": 174.78348,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n174",
+          "label": "Stop 175",
+          "lat": -41.288528,
+          "lng": 174.764026,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n175",
+          "label": "Stop 176",
+          "lat": -41.292474,
+          "lng": 174.765316,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n176",
+          "label": "Stop 177",
+          "lat": -41.29188,
+          "lng": 174.765733,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n177",
+          "label": "Stop 178",
+          "lat": -41.290877,
+          "lng": 174.779111,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n178",
+          "label": "Stop 179",
+          "lat": -41.285416,
+          "lng": 174.773254,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n179",
+          "label": "Stop 180",
+          "lat": -41.284407,
+          "lng": 174.771293,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n180",
+          "label": "Stop 181",
+          "lat": -41.298617,
+          "lng": 174.778304,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n181",
+          "label": "Stop 182",
+          "lat": -41.279266,
+          "lng": 174.76872,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n182",
+          "label": "Stop 183",
+          "lat": -41.292177,
+          "lng": 174.781913,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n183",
+          "label": "Stop 184",
+          "lat": -41.299992,
+          "lng": 174.782062,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n184",
+          "label": "Stop 185",
+          "lat": -41.289241,
+          "lng": 174.758399,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n185",
+          "label": "Stop 186",
+          "lat": -41.282286,
+          "lng": 174.778558,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n186",
+          "label": "Stop 187",
+          "lat": -41.277874,
+          "lng": 174.779938,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n187",
+          "label": "Stop 188",
+          "lat": -41.274319,
+          "lng": 174.774543,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n188",
+          "label": "Stop 189",
+          "lat": -41.295237,
+          "lng": 174.787855,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n189",
+          "label": "Stop 190",
+          "lat": -41.283845,
+          "lng": 174.758587,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n190",
+          "label": "Stop 191",
+          "lat": -41.277363,
+          "lng": 174.783283,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n191",
+          "label": "Stop 192",
+          "lat": -41.276952,
+          "lng": 174.771422,
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "id": "n192",
+          "label": "Stop 193",
+          "lat": -41.288575,
+          "lng": 174.778542,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n193",
+          "label": "Stop 194",
+          "lat": -41.291439,
+          "lng": 174.782356,
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "id": "n194",
+          "label": "Stop 195",
+          "lat": -41.285833,
+          "lng": 174.777528,
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "id": "n195",
+          "label": "Stop 196",
+          "lat": -41.282706,
+          "lng": 174.770809,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n196",
+          "label": "Stop 197",
+          "lat": -41.298153,
+          "lng": 174.765018,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n197",
+          "label": "Stop 198",
+          "lat": -41.295945,
+          "lng": 174.789949,
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "id": "n198",
+          "label": "Stop 199",
+          "lat": -41.297145,
+          "lng": 174.782271,
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "id": "n199",
+          "label": "Stop 200",
+          "lat": -41.290102,
+          "lng": 174.778986,
+          "modes": [
+            "train"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "a": "n0",
+          "b": "n32",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n1",
+          "b": "n149",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n1",
+          "b": "n33",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n1",
+          "b": "n83",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n2",
+          "b": "n97",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n3",
+          "b": "n131",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n3",
+          "b": "n176",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n3",
+          "b": "n175",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n4",
+          "b": "n172",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n5",
+          "b": "n188",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n5",
+          "b": "n157",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n6",
+          "b": "n189",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n6",
+          "b": "n55",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n6",
+          "b": "n123",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n7",
+          "b": "n67",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n7",
+          "b": "n162",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n8",
+          "b": "n156",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n8",
+          "b": "n96",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n8",
+          "b": "n34",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n9",
+          "b": "n168",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n9",
+          "b": "n108",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n9",
+          "b": "n181",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n10",
+          "b": "n70",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n11",
+          "b": "n91",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n12",
+          "b": "n46",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n13",
+          "b": "n126",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n14",
+          "b": "n116",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n14",
+          "b": "n17",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n15",
+          "b": "n109",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n16",
+          "b": "n92",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n17",
+          "b": "n20",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n17",
+          "b": "n116",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n18",
+          "b": "n133",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n18",
+          "b": "n142",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n19",
+          "b": "n84",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n19",
+          "b": "n32",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n20",
+          "b": "n14",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n20",
+          "b": "n116",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n21",
+          "b": "n154",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n21",
+          "b": "n147",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n21",
+          "b": "n143",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n22",
+          "b": "n49",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n23",
+          "b": "n122",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n23",
+          "b": "n140",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n24",
+          "b": "n133",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n25",
+          "b": "n118",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n25",
+          "b": "n88",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n25",
+          "b": "n136",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n26",
+          "b": "n185",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n27",
+          "b": "n5",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n27",
+          "b": "n157",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n28",
+          "b": "n178",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n29",
+          "b": "n171",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n29",
+          "b": "n54",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n30",
+          "b": "n196",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n31",
+          "b": "n114",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n32",
+          "b": "n160",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n33",
+          "b": "n149",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n34",
+          "b": "n96",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n34",
+          "b": "n156",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n35",
+          "b": "n164",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n36",
+          "b": "n43",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n37",
+          "b": "n147",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n38",
+          "b": "n60",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n38",
+          "b": "n16",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n38",
+          "b": "n77",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "n39",
+          "b": "n143",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n40",
+          "b": "n129",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n40",
+          "b": "n70",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n41",
+          "b": "n195",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n41",
+          "b": "n121",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n42",
+          "b": "n88",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n42",
+          "b": "n118",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n44",
+          "b": "n72",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n44",
+          "b": "n75",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n45",
+          "b": "n146",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n45",
+          "b": "n58",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n46",
+          "b": "n56",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n46",
+          "b": "n167",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n47",
+          "b": "n114",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n47",
+          "b": "n89",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n47",
+          "b": "n31",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n48",
+          "b": "n62",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n48",
+          "b": "n186",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n49",
+          "b": "n87",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n49",
+          "b": "n14",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n49",
+          "b": "n116",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n50",
+          "b": "n62",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "n50",
+          "b": "n35",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n50",
+          "b": "n117",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n51",
+          "b": "n178",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n51",
+          "b": "n28",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n52",
+          "b": "n43",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n53",
+          "b": "n196",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n54",
+          "b": "n138",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n54",
+          "b": "n130",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n55",
+          "b": "n155",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n56",
+          "b": "n12",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n56",
+          "b": "n138",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n57",
+          "b": "n145",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n57",
+          "b": "n190",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n58",
+          "b": "n146",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n59",
+          "b": "n187",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n60",
+          "b": "n77",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n60",
+          "b": "n16",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n61",
+          "b": "n80",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n61",
+          "b": "n86",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n62",
+          "b": "n141",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n63",
+          "b": "n192",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n63",
+          "b": "n82",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n63",
+          "b": "n148",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n64",
+          "b": "n95",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n64",
+          "b": "n170",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n65",
+          "b": "n76",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n65",
+          "b": "n45",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n66",
+          "b": "n174",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n66",
+          "b": "n90",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "n66",
+          "b": "n151",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n67",
+          "b": "n162",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n67",
+          "b": "n165",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n68",
+          "b": "n174",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n69",
+          "b": "n138",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n69",
+          "b": "n56",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n70",
+          "b": "n129",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n71",
+          "b": "n177",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n72",
+          "b": "n75",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n73",
+          "b": "n168",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n74",
+          "b": "n160",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n74",
+          "b": "n0",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n74",
+          "b": "n61",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n77",
+          "b": "n92",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n77",
+          "b": "n16",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n77",
+          "b": "n5",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n78",
+          "b": "n90",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n78",
+          "b": "n151",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n78",
+          "b": "n99",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n79",
+          "b": "n185",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n79",
+          "b": "n26",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n79",
+          "b": "n130",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n80",
+          "b": "n86",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n80",
+          "b": "n140",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n81",
+          "b": "n154",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n81",
+          "b": "n21",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n81",
+          "b": "n147",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n82",
+          "b": "n148",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n82",
+          "b": "n194",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n83",
+          "b": "n112",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n83",
+          "b": "n149",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n83",
+          "b": "n33",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n85",
+          "b": "n123",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n85",
+          "b": "n58",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n88",
+          "b": "n118",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n89",
+          "b": "n114",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n90",
+          "b": "n151",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n91",
+          "b": "n106",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n92",
+          "b": "n197",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n93",
+          "b": "n7",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n94",
+          "b": "n142",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n94",
+          "b": "n18",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n94",
+          "b": "n133",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n95",
+          "b": "n170",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n96",
+          "b": "n156",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n97",
+          "b": "n103",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n97",
+          "b": "n48",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n98",
+          "b": "n110",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n98",
+          "b": "n23",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n98",
+          "b": "n112",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n99",
+          "b": "n89",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n99",
+          "b": "n114",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n100",
+          "b": "n109",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n100",
+          "b": "n15",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n101",
+          "b": "n137",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n101",
+          "b": "n110",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n102",
+          "b": "n153",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n102",
+          "b": "n28",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n102",
+          "b": "n51",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n103",
+          "b": "n48",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n104",
+          "b": "n53",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n104",
+          "b": "n196",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n104",
+          "b": "n101",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n105",
+          "b": "n183",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n107",
+          "b": "n183",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n107",
+          "b": "n105",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n108",
+          "b": "n181",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n108",
+          "b": "n168",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n110",
+          "b": "n23",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n110",
+          "b": "n137",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n111",
+          "b": "n166",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n111",
+          "b": "n180",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n111",
+          "b": "n107",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n113",
+          "b": "n115",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n113",
+          "b": "n117",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n113",
+          "b": "n187",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n115",
+          "b": "n117",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n117",
+          "b": "n187",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n119",
+          "b": "n58",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n119",
+          "b": "n181",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n120",
+          "b": "n80",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n120",
+          "b": "n122",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n121",
+          "b": "n36",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n122",
+          "b": "n140",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n123",
+          "b": "n58",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n123",
+          "b": "n189",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n124",
+          "b": "n184",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n124",
+          "b": "n136",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n124",
+          "b": "n25",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "n125",
+          "b": "n9",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n125",
+          "b": "n168",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n125",
+          "b": "n108",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n126",
+          "b": "n71",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n127",
+          "b": "n144",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n127",
+          "b": "n158",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n128",
+          "b": "n135",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n128",
+          "b": "n34",
+          "modes": [
+            "scooter",
+            "bus"
+          ]
+        },
+        {
+          "a": "n130",
+          "b": "n26",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n130",
+          "b": "n185",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n130",
+          "b": "n150",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n131",
+          "b": "n176",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n132",
+          "b": "n161",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n132",
+          "b": "n153",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n132",
+          "b": "n194",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n134",
+          "b": "n198",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n134",
+          "b": "n152",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n134",
+          "b": "n105",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n136",
+          "b": "n184",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n138",
+          "b": "n185",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n139",
+          "b": "n106",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n139",
+          "b": "n91",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n139",
+          "b": "n11",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n140",
+          "b": "n86",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n141",
+          "b": "n133",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n141",
+          "b": "n18",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n142",
+          "b": "n133",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n143",
+          "b": "n147",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n144",
+          "b": "n135",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n145",
+          "b": "n190",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n146",
+          "b": "n55",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n150",
+          "b": "n26",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n152",
+          "b": "n198",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n153",
+          "b": "n161",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n154",
+          "b": "n147",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n155",
+          "b": "n146",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n155",
+          "b": "n6",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n158",
+          "b": "n182",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n159",
+          "b": "n191",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n159",
+          "b": "n44",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n159",
+          "b": "n72",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n160",
+          "b": "n84",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n162",
+          "b": "n165",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n163",
+          "b": "n13",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n163",
+          "b": "n126",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n163",
+          "b": "n71",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n164",
+          "b": "n187",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n166",
+          "b": "n107",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n167",
+          "b": "n194",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n169",
+          "b": "n179",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n169",
+          "b": "n28",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n169",
+          "b": "n178",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n170",
+          "b": "n172",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n170",
+          "b": "n4",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n170",
+          "b": "n188",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n173",
+          "b": "n190",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n173",
+          "b": "n145",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n175",
+          "b": "n176",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n177",
+          "b": "n199",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n177",
+          "b": "n126",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n180",
+          "b": "n166",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n180",
+          "b": "n19",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n182",
+          "b": "n193",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n186",
+          "b": "n57",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n186",
+          "b": "n141",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n187",
+          "b": "n115",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n188",
+          "b": "n157",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n189",
+          "b": "n70",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n189",
+          "b": "n129",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n191",
+          "b": "n44",
+          "modes": [
+            "bus",
+            "train"
+          ]
+        },
+        {
+          "a": "n192",
+          "b": "n82",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n192",
+          "b": "n199",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n193",
+          "b": "n116",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n193",
+          "b": "n14",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n194",
+          "b": "n148",
+          "modes": [
+            "bus"
+          ]
+        },
+        {
+          "a": "n195",
+          "b": "n179",
+          "modes": [
+            "scooter"
+          ]
+        },
+        {
+          "a": "n197",
+          "b": "n188",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n199",
+          "b": "n34",
+          "modes": [
+            "train"
+          ]
+        },
+        {
+          "a": "n199",
+          "b": "n96",
+          "modes": [
+            "train"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -15,8 +15,8 @@ stateDiagram-v2
 	CatchCheck --> DetectivesWin : on Mr. X node
 	CatchCheck --> TurnCheck
     
-    TurnCheck --> MrXWins : round 24 reached
-    TurnCheck --> MrXTurn : round 24 not reached
+    TurnCheck --> MrXWins : final round reached
+    TurnCheck --> MrXTurn : final round not reached
 	
     DetectivesWin --> [*]
     MrXWins --> [*]
@@ -71,7 +71,7 @@ flowchart TD
     E --> M
     M -- no --> C
     M -- yes --> N[Increment round]
-    N --> O{Round 24?}
+    N --> O{final round?}
     O -- yes --> P([Mr. X wins!])
     O -- no --> Q([Next Mr. X turn])
   
