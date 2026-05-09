@@ -3,9 +3,13 @@ Measure map render time (navigation start → 'Done.') for each implementation.
 Uses Firefox headless via Selenium. The HTML files set window.__mapDone via
 performance.now() when rendering finishes; we poll for it via execute_script.
 
-One Firefox instance is kept open per map to avoid repeated geckodriver startup
-cost and to let the browser cache the 2.2 MB GeoJSON across runs (realistic).
-Between runs the page is reset by navigating to about:blank.
+Methodology:
+  - HTTP cache is disabled for the entire Firefox instance (disk + memory) so
+    every page load fetches all assets fresh from the local server.
+  - One warmup run is performed before the measured runs to settle the browser
+    and prime the JS JIT compiler; its time is recorded but excluded from stats.
+  - RUNS measured runs follow, each starting from about:blank with a clean JS
+    context and no cached assets.
 
 Run: python3 time_maps.py
 """
@@ -21,7 +25,7 @@ from selenium.webdriver.firefox.service import Service
 SERVE_DIR = Path(__file__).parent
 PORT      = 18374
 SCENARIOS = ['baseline', 'stress']
-RUNS      = 3
+RUNS      = 10
 TIMEOUT   = 300   # seconds per run
 POLL      = 0.2   # polling interval
 
@@ -61,6 +65,9 @@ def make_driver():
     opts = Options()
     opts.add_argument('--headless')
     opts.binary_location = '/snap/firefox/current/usr/lib/firefox/firefox'
+    # Disable HTTP cache so every run fetches all assets fresh from the local server.
+    opts.set_preference('browser.cache.disk.enable', False)
+    opts.set_preference('browser.cache.memory.enable', False)
     return webdriver.Firefox(options=opts, service=Service(log_output='/dev/null'))
 
 def quit_driver(driver):
@@ -133,27 +140,37 @@ def main():
 
             print(f'\n[{scenario}] {m["name"]}', flush=True)
 
-            # One driver instance for all runs of this map — GeoJSON gets cached
             driver = make_driver()
             try:
+                # Warmup: one unrecorded load to settle the browser and prime the JIT.
+                # Cache is disabled so this does not give subsequent runs a cache advantage.
+                try:
+                    w = time_one_run(driver, m['url'], scenario)
+                    wstr = f'{w:.2f}s' if w is not None else 'TIMEOUT'
+                    print(f'  warmup: {wstr} (discarded)', flush=True)
+                except Exception as e:
+                    print(f'  warmup: ERROR – {e} (continuing)', flush=True)
+
                 for run in range(1, RUNS + 1):
                     try:
                         elapsed = time_one_run(driver, m['url'], scenario)
                         if elapsed is None:
-                            print(f'  run {run}: TIMEOUT', flush=True)
+                            print(f'  run {run:>2}: TIMEOUT', flush=True)
                         else:
-                            print(f'  run {run}: {elapsed:.2f}s', flush=True)
+                            print(f'  run {run:>2}: {elapsed:.2f}s', flush=True)
                             times.append(elapsed)
                     except Exception as e:
-                        print(f'  run {run}: ERROR – {e}', flush=True)
+                        print(f'  run {run:>2}: ERROR – {e}', flush=True)
             finally:
                 quit_driver(driver)
 
             results[scenario][m['name']] = {
-                'min':  round(min(times), 2),
-                'mean': round(statistics.mean(times), 2),
-                'max':  round(max(times), 2),
-                'runs': times,
+                'min':    round(min(times), 2),
+                'mean':   round(statistics.mean(times), 2),
+                'median': round(statistics.median(times), 2),
+                'stdev':  round(statistics.stdev(times), 3) if len(times) > 1 else None,
+                'max':    round(max(times), 2),
+                'runs':   times,
             } if times else None
 
     server.shutdown()
@@ -163,7 +180,7 @@ def main():
         print(f'\nScenario: {scenario}')
         for name, r in results[scenario].items():
             if r:
-                print(f'  {name:14}  min={r["min"]}s  mean={r["mean"]}s  max={r["max"]}s')
+                print(f'  {name:14}  min={r["min"]}s  mean={r["mean"]}s  median={r["median"]}s  stdev={r["stdev"]}s  max={r["max"]}s')
             else:
                 print(f'  {name:14}  FAILED / TIMEOUT')
 
