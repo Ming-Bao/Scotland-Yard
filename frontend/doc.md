@@ -21,7 +21,7 @@ npm install
 npm run dev
 ```
 
-The app starts on `http://localhost:5173`. API requests to `/api/*` are proxied to `http://localhost:8080` automatically — no CORS configuration needed in the browser.
+The app starts on `http://localhost:5173`. API requests to `/api/*` are proxied to `http://localhost:8999` automatically — no CORS configuration needed in the browser.
 
 ## Build (production)
 
