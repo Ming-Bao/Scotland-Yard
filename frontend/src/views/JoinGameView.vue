@@ -1,48 +1,23 @@
 <template>
-  <div class="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-    <div class="w-full max-w-md space-y-6">
-      <div class="flex items-center gap-3">
-        <RouterLink to="/" class="text-gray-400 hover:text-white transition-colors">
-          <ArrowLeft :size="20" />
-        </RouterLink>
-        <h1 class="text-2xl font-bold text-white">Join Game</h1>
-      </div>
+  <div class="page">
+    <div class="content">
+      <PageHeader title="Join Game" @back="router.push('/')" />
 
-      <div class="bg-gray-900 rounded-lg p-6 space-y-4">
-        <div class="space-y-1">
-          <label class="text-sm text-gray-400">Your Name</label>
-          <input
-            v-model="playerName"
-            type="text"
-            placeholder="Enter your name"
-            class="w-full bg-gray-800 text-white rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500"
-          />
-        </div>
+      <div class="card">
+        <FormInput label="Your Name" v-model="playerName" placeholder="Enter your name" />
 
-        <div class="space-y-1">
-          <label class="text-sm text-gray-400">Game Code</label>
-          <input
-            v-model="joinCode"
-            type="text"
-            placeholder="XXXXXX"
-            maxlength="6"
-            class="w-full bg-gray-800 text-white font-mono text-xl tracking-widest rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-600 placeholder-gray-500 uppercase"
-            @input="joinCode = ($event.target as HTMLInputElement).value.toUpperCase()"
-          />
-        </div>
+        <FormInput
+          label="Game Code"
+          v-model="joinCode"
+          placeholder="XXXXXX"
+          :maxlength="6"
+          input-class="code-input"
+          :uppercase="true"
+        />
 
-        <div
-          v-if="error"
-          class="bg-red-900/20 border border-red-700 text-red-400 rounded-lg px-4 py-2.5 text-sm"
-        >
-          {{ error }}
-        </div>
+        <ErrorBanner :message="error" />
 
-        <button
-          @click="handleJoin"
-          :disabled="loading"
-          class="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium py-3 rounded-lg transition-colors"
-        >
+        <button @click="handleJoin" :disabled="loading" class="btn-primary">
           {{ loading ? 'Joining…' : 'Join Game' }}
         </button>
       </div>
@@ -53,9 +28,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft } from 'lucide-vue-next'
 import { joinGame } from '../api/gameApi'
 import { useGameStore } from '../stores/gameStore'
+import PageHeader from '../components/ui/PageHeader.vue'
+import FormInput from '../components/ui/FormInput.vue'
+import ErrorBanner from '../components/ui/ErrorBanner.vue'
 
 const router = useRouter()
 const store = useGameStore()
@@ -87,3 +64,23 @@ async function handleJoin() {
   }
 }
 </script>
+
+<style scoped>
+.page {
+  @apply min-h-screen bg-gray-950 flex items-center justify-center px-4;
+}
+.content {
+  @apply w-full max-w-md space-y-6;
+}
+.card {
+  @apply bg-gray-900 rounded-lg p-6 space-y-4;
+}
+.btn-primary {
+  @apply w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50
+         text-white font-medium py-3 rounded-lg transition-colors;
+}
+/* Applied via inputClass prop on the code input */
+:deep(.code-input) {
+  @apply font-mono text-xl tracking-widest uppercase;
+}
+</style>

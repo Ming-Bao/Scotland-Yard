@@ -1,4 +1,11 @@
 export type TicketType = 'ESCOOTER' | 'BUS' | 'TRAIN' | 'FERRY' | 'BLACK' | 'DOUBLE'
+
+// Graph / demo types (Sprint 2 — replaced by real game state in Sprint 3)
+export interface GraphNode { id: number; x: number; y: number; label: string }
+export interface GraphEdge { from: number; to: number; modes: string[] }
+export interface DemoPlayer { name: string; isYou: boolean; role: string; node: number | null; color: string }
+export interface DemoTicket { type: string; label: string; count: number; color: string }
+export interface MrXLogEntry { round: number; ticket: string; node: number | null }
 export type GamePhase = 'LOBBY' | 'IN_PROGRESS' | 'PAUSED' | 'ENDED'
 export type Role = 'MR_X' | 'DETECTIVE'
 export type TurnPhase = 'MR_X_TURN' | 'DETECTIVE_TURN'

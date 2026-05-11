@@ -1,25 +1,18 @@
 <template>
-  <div class="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4">
-    <div class="text-center space-y-8 max-w-md w-full">
-      <div class="space-y-2">
-        <h1 class="text-4xl font-bold text-white">Scotland Yard</h1>
-        <p class="text-blue-400 italic text-lg">Wellington Edition</p>
-        <p class="text-gray-400 text-sm">Hunt down Mr. X across Wellington's streets</p>
+  <div class="page">
+    <div class="hero">
+      <div class="hero-text">
+        <h1 class="title">Scotland Yard</h1>
+        <p class="subtitle">Wellington Edition</p>
+        <p class="tagline">Hunt down Mr. X across Wellington's streets</p>
       </div>
 
-      <div class="flex flex-col gap-3">
-        <RouterLink
-          to="/create"
-          class="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-        >
+      <div class="btn-group">
+        <RouterLink to="/create" class="btn-primary">
           <Users :size="18" />
           Create Game
         </RouterLink>
-
-        <RouterLink
-          to="/join"
-          class="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors"
-        >
+        <RouterLink to="/join" class="btn-secondary">
           <UserPlus :size="18" />
           Join Game
         </RouterLink>
@@ -27,14 +20,14 @@
     </div>
 
     <!-- Dev nav -->
-    <div class="absolute bottom-4 left-0 right-0 flex justify-center">
-      <div class="border border-gray-800 rounded-lg px-4 py-2 flex items-center gap-1">
-        <span class="text-gray-600 text-xs mr-2">dev</span>
-        <RouterLink to="/" class="text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors">Landing</RouterLink>
-        <RouterLink to="/create" class="text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors">Create</RouterLink>
-        <RouterLink to="/join" class="text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors">Join</RouterLink>
-        <RouterLink to="/lobby/preview" class="text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors">Lobby</RouterLink>
-        <RouterLink to="/game/preview" class="text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors">Game Board</RouterLink>
+    <div class="dev-nav">
+      <div class="dev-nav-inner">
+        <span class="dev-label">dev</span>
+        <RouterLink to="/" class="dev-link">Landing</RouterLink>
+        <RouterLink to="/create" class="dev-link">Create</RouterLink>
+        <RouterLink to="/join" class="dev-link">Join</RouterLink>
+        <RouterLink to="/lobby/preview" class="dev-link">Lobby</RouterLink>
+        <RouterLink to="/game/preview" class="dev-link">Game Board</RouterLink>
       </div>
     </div>
   </div>
@@ -43,3 +36,47 @@
 <script setup lang="ts">
 import { Users, UserPlus } from 'lucide-vue-next'
 </script>
+
+<style scoped>
+.page {
+  @apply min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4;
+}
+.hero {
+  @apply text-center space-y-8 max-w-md w-full;
+}
+.hero-text {
+  @apply space-y-2;
+}
+.title {
+  @apply text-4xl font-bold text-white;
+}
+.subtitle {
+  @apply text-blue-400 italic text-lg;
+}
+.tagline {
+  @apply text-gray-400 text-sm;
+}
+.btn-group {
+  @apply flex flex-col gap-3;
+}
+.btn-primary {
+  @apply flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700
+         text-white font-medium py-3 px-6 rounded-lg transition-colors;
+}
+.btn-secondary {
+  @apply flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600
+         text-white font-medium py-3 px-6 rounded-lg transition-colors;
+}
+.dev-nav {
+  @apply absolute bottom-4 left-0 right-0 flex justify-center;
+}
+.dev-nav-inner {
+  @apply border border-gray-800 rounded-lg px-4 py-2 flex items-center gap-1;
+}
+.dev-label {
+  @apply text-gray-600 text-xs mr-2;
+}
+.dev-link {
+  @apply text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors;
+}
+</style>
