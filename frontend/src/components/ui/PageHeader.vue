@@ -14,6 +14,8 @@ defineEmits<{ back: [] }>()
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .header {
   @apply flex items-center gap-3;
 }

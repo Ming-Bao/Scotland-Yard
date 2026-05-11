@@ -62,6 +62,8 @@ defineEmits<{
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .info-panel {
   @apply w-72 bg-gray-900 border-l border-gray-800 flex flex-col overflow-y-auto shrink-0;
 }

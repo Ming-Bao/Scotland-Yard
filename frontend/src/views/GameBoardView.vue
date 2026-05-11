@@ -136,6 +136,8 @@ async function handleLeave() {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .page {
   @apply h-screen bg-gray-950 flex flex-col overflow-hidden;
 }

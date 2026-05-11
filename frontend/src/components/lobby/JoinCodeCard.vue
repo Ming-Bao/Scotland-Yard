@@ -27,6 +27,8 @@ async function copyCode() {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .code-card {
   @apply bg-gray-900 rounded-lg p-6 space-y-3;
 }

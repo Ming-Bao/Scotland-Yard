@@ -92,6 +92,8 @@ function isReachable(nodeId: number): boolean {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .map-panel {
   @apply flex-1 relative bg-gray-950 overflow-hidden;
 }

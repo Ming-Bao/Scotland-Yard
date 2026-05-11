@@ -60,6 +60,8 @@ async function handleCreate() {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .page {
   @apply min-h-screen bg-gray-950 flex items-center justify-center px-4;
 }

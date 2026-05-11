@@ -33,6 +33,8 @@ function handleInput(e: Event) {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .field {
   @apply space-y-1;
 }

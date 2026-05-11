@@ -18,6 +18,8 @@ defineProps<{ log: MrXLogEntry[] }>()
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .log-section {
   @apply p-4 border-b border-gray-800;
 }

@@ -23,6 +23,8 @@ const emptySlots = computed(() => Math.max(0, props.maxPlayers - props.players.l
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .slot-list {
   @apply bg-gray-900 rounded-lg p-6 space-y-3;
 }

@@ -16,6 +16,8 @@ defineProps<{ tickets: DemoTicket[] }>()
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .ticket-section {
   @apply p-4 border-b border-gray-800;
 }

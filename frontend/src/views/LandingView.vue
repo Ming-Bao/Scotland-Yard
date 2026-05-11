@@ -22,7 +22,7 @@
     <!-- Dev nav -->
     <div class="dev-nav">
       <div class="dev-nav-inner">
-        <span class="dev-label">dev</span>
+        <span class="dev-label">DevNav</span>
         <RouterLink to="/" class="dev-link">Landing</RouterLink>
         <RouterLink to="/create" class="dev-link">Create</RouterLink>
         <RouterLink to="/join" class="dev-link">Join</RouterLink>
@@ -38,6 +38,8 @@ import { Users, UserPlus } from 'lucide-vue-next'
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .page {
   @apply min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4;
 }

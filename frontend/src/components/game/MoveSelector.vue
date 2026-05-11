@@ -54,6 +54,8 @@ defineEmits<{
 </script>
 
 <style scoped>
+@reference "tailwindcss";
+
 .move-section {
   @apply p-4;
 }
