@@ -1,5 +1,6 @@
 package com.scotlandyard.model;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class Player {
@@ -29,6 +30,11 @@ public class Player {
     public Integer getNodeId() { return nodeId; }
     public void setNodeId(Integer nodeId) { this.nodeId = nodeId; }
 
-    public Map<TicketType, Integer> getTickets() { return tickets; }
-    public void setTickets(Map<TicketType, Integer> tickets) { this.tickets = tickets; }
+    public Map<TicketType, Integer> getTickets() { return Collections.unmodifiableMap(tickets); }
+    public Integer getTicket(TicketType ticket) { return Integer.valueOf(this.tickets.get(ticket)); }
+    public void useTicket(TicketType ticket) { 
+        Integer newTicketValue = this.tickets.get(ticket)-1;
+        if (newTicketValue < 0) throw new IllegalStateException("Tickets can't go below 0");
+        this.tickets.replace(ticket, newTicketValue); 
+    }
 }
