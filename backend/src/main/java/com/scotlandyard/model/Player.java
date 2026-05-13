@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/*================Turn this into an interface and extend Mr.X and Detectives==================== */
 public class Player {
 
     private String id;
