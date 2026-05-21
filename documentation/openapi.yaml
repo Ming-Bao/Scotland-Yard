@@ -1,0 +1,343 @@
+openapi: 3.1.0
+info:
+  title: Scotland Yard Wellington API
+  description: REST API for the Scotland Yard Wellington multiplayer game backend.
+  version: 0.1.1
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+paths:
+
+  /api/games:
+    post:
+      summary: Create a new game
+      description: Creates a new game session. The caller becomes the host. Returns the host's player ID and the initial game state.
+      operationId: createGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
+            example:
+              hostName: Alice
+              maxPlayers: 4
+      responses:
+        '200':
+          description: Game created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateGameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/join:
+    post:
+      summary: Join an existing game
+      description: Joins a LOBBY-phase game identified by its join code. Returns the joining player's ID and the updated game state.
+      operationId: joinGame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinGameRequest'
+            example:
+              joinCode: WXYZ12
+              playerName: Bob
+      responses:
+        '200':
+          description: Joined successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinGameResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{id}:
+    get:
+      summary: Get game state
+      description: Returns the current state of a game. No role filtering is applied at this endpoint — use the WebSocket per-player channel for filtered views.
+      operationId: getGame
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      responses:
+        '200':
+          description: Current game state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateDTO'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{id}/start:
+    post:
+      summary: Start the game
+      description: Transitions the game from LOBBY to IN_PROGRESS. Only the host may call this. Requires at least 2 players. Roles and starting nodes are assigned randomly by the server.
+      operationId: startGame
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartGameRequest'
+            example:
+              playerId: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Game started; returns updated state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameStateDTO'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{id}/players/{targetPlayerId}/kick:
+    post:
+      summary: Kick a player from the lobby
+      description: Host-only. Removes another player from the game during the LOBBY phase. Cannot kick yourself or kick during an active game.
+      operationId: kickPlayer
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+        - name: targetPlayerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the player to kick
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KickPlayerRequest'
+            example:
+              hostId: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: Player kicked successfully (empty body)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/games/{id}/players/{playerId}:
+    delete:
+      summary: Leave the game
+      description: |
+        Removes a player from the game.
+        - **Lobby phase, host leaves**: game session is deleted entirely.
+        - **Lobby phase, non-host leaves**: player is removed; remaining players continue waiting.
+        - **In-progress phase, Mr X leaves**: game ends immediately (`phase: ENDED`, `abortReason` set).
+        - **In-progress phase, detective leaves**: player removed; their turns are auto-skipped going forward.
+      operationId: leaveGame
+      parameters:
+        - $ref: '#/components/parameters/GameId'
+        - name: playerId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the player leaving
+      responses:
+        '200':
+          description: Player removed successfully (empty body)
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+
+  parameters:
+    GameId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: UUID of the game session
+
+  responses:
+    BadRequest:
+      description: Invalid request or rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: Game not found
+
+  schemas:
+
+    CreateGameRequest:
+      type: object
+      required: [hostName, maxPlayers]
+      properties:
+        hostName:
+          type: string
+          minLength: 1
+          description: Display name of the host player
+        maxPlayers:
+          type: integer
+          minimum: 2
+          maximum: 6
+          description: Total player cap (including Mr X)
+
+    CreateGameResponse:
+      type: object
+      required: [playerId, gameState]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          description: UUID assigned to the host; must be stored client-side
+        gameState:
+          $ref: '#/components/schemas/GameStateDTO'
+
+    JoinGameRequest:
+      type: object
+      required: [joinCode, playerName]
+      properties:
+        joinCode:
+          type: string
+          minLength: 6
+          maxLength: 6
+          pattern: '^[A-Z0-9]{6}$'
+          description: 6-character uppercase join code shown in the lobby
+        playerName:
+          type: string
+          minLength: 1
+          description: Display name chosen by the joining player
+
+    JoinGameResponse:
+      type: object
+      required: [playerId, gameState]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          description: UUID assigned to the joining player; must be stored client-side
+        gameState:
+          $ref: '#/components/schemas/GameStateDTO'
+
+    KickPlayerRequest:
+      type: object
+      required: [hostId]
+      properties:
+        hostId:
+          type: string
+          format: uuid
+          description: UUID of the host requesting the kick
+
+    StartGameRequest:
+      type: object
+      required: [playerId]
+      properties:
+        playerId:
+          type: string
+          format: uuid
+          description: UUID of the player requesting the start (must be the host)
+
+    GameStateDTO:
+      type: object
+      required: [gameId, joinCode, phase, maxPlayers, players, round]
+      properties:
+        gameId:
+          type: string
+          format: uuid
+        joinCode:
+          type: string
+          description: 6-character uppercase room code
+          example: WXYZ12
+        phase:
+          $ref: '#/components/schemas/GamePhase'
+        maxPlayers:
+          type: integer
+          minimum: 2
+          maximum: 6
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerDTO'
+        round:
+          type: integer
+          minimum: 0
+          description: Current round number (0 while in lobby)
+        turnPhase:
+          $ref: '#/components/schemas/TurnPhase'
+          nullable: true
+        currentPlayerId:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID of the player whose turn it is; null outside IN_PROGRESS
+        winner:
+          type: string
+          nullable: true
+          description: '"MR_X", "DETECTIVES", "ABORTED", or null if game is still running'
+        abortReason:
+          type: string
+          nullable: true
+          description: Human-readable reason the game was aborted (e.g. "Mr. X has left the game"); null if not aborted
+
+    PlayerDTO:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        role:
+          $ref: '#/components/schemas/Role'
+          nullable: true
+          description: Null until game starts
+        nodeId:
+          type: integer
+          nullable: true
+          description: Current map node ID; null until game starts. For Mr X, null in detective-view responses on non-reveal rounds.
+        tickets:
+          type: object
+          nullable: true
+          description: Ticket counts keyed by TicketType; -1 means unlimited. Null until game starts.
+          additionalProperties:
+            type: integer
+          example:
+            ESCOOTER: 10
+            BUS: 8
+            TRAIN: 4
+            FERRY: 2
+
+    GamePhase:
+      type: string
+      enum: [LOBBY, IN_PROGRESS, PAUSED, ENDED]
+      description: |
+        - `LOBBY`: waiting for players, game not yet started
+        - `IN_PROGRESS`: game running
+        - `PAUSED`: a player disconnected; grace period active
+        - `ENDED`: game finished (win, loss, or abort)
+
+    TurnPhase:
+      type: string
+      enum: [MR_X_TURN, DETECTIVE_TURN]
+      description: Sub-phase within an IN_PROGRESS round
+
+    Role:
+      type: string
+      enum: [MR_X, DETECTIVE]
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Human-readable error message

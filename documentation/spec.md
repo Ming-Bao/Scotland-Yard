@@ -470,7 +470,23 @@ Turn timer: a per-turn server-side timer (configurable: `game.turn-timer-seconds
 
 ---
 
-## 11. Non-functional Requirements
+## 11. API Documentation
+
+The file `documentation/openapi.yaml` is the authoritative OpenAPI 3.1.0 specification for all REST endpoints. It must be kept in sync with the controller implementation at all times.
+
+**Rule for Claude Code**: Whenever a REST endpoint is added, modified, or removed in any Spring controller, update `documentation/openapi.yaml` in the same change. Specifically:
+
+- Add or remove the path entry under `paths:`.
+- Add or remove request body schema(s) under `components/schemas/`.
+- Add or remove response schema(s) and examples.
+- Update enum values if a new `GamePhase`, `TurnPhase`, `Role`, or `TicketType` variant is added.
+- Keep the `version:` field in `info:` bumped (patch for new endpoints, minor for breaking changes).
+
+The file can be viewed locally at [Swagger Editor](https://editor.swagger.io/) by pasting the YAML, or with any OpenAPI-compatible viewer.
+
+---
+
+## 12. Non-functional Requirements
 
 | Requirement | Target |
 |---|---|

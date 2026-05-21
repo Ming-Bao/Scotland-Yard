@@ -48,12 +48,30 @@ Documented in `documentation/plans/states-diagrams.md`:
 - **Routing**: GeoJSON pre-computed paths preferred over live routing APIs — APIs are too expensive per-request and too slow for hundreds of node-to-node edges.
 - **Turn timers**: Server-side auto-skip on `TurnTimerExpired` so gameplay advances even if a player is idle.
 
+## OpenAPI Spec — MANDATORY SYNC RULE
+
+**`documentation/openapi.yaml` must be updated in the same change as any REST controller modification.**
+
+This applies whenever you:
+- Add a new endpoint to any `@RestController`
+- Change a request body or response shape
+- Remove or rename an endpoint
+- Add a new enum variant to `GamePhase`, `TurnPhase`, `Role`, or `TicketType`
+
+Steps for each controller change:
+1. Edit the controller / DTO as needed.
+2. Open `documentation/openapi.yaml` and update the matching `paths:` entry and `components/schemas:` section.
+3. Bump the patch version in `info.version` (e.g. `0.1.0` → `0.1.1`).
+
+Do **not** skip this step even for small changes. The OpenAPI file is used as the source of truth for the API surface.
+
 ## Documentation Layout
 
+- `documentation/openapi.yaml` — OpenAPI 3.1.0 spec (keep in sync with controllers)
 - `documentation/plans/` — state diagrams and game flowcharts (Mermaid)
 - `documentation/test_map_api/` — map library benchmarks, timing results, per-library notes
 - `documentation/project_proposal/` — original proposal (LaTeX source + PDFs)
-- `documentation/spec.md` — living spec (currently being filled in)
+- `documentation/spec.md` — living spec
 
 ## Planned Evaluation Methods
 
