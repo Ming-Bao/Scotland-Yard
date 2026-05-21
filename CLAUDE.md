@@ -50,20 +50,30 @@ Documented in `documentation/plans/states-diagrams.md`:
 
 ## OpenAPI Spec — MANDATORY SYNC RULE
 
-**`documentation/openapi.yaml` must be updated in the same change as any REST controller modification.**
+**`documentation/openapi.yaml` must be updated in the same change as any modification to the API surface — REST or WebSocket.**
 
-This applies whenever you:
-- Add a new endpoint to any `@RestController`
+### REST changes (backend `@RestController`)
+Update whenever you:
+- Add, remove, or rename an endpoint
 - Change a request body or response shape
-- Remove or rename an endpoint
 - Add a new enum variant to `GamePhase`, `TurnPhase`, `Role`, or `TicketType`
 
-Steps for each controller change:
-1. Edit the controller / DTO as needed.
-2. Open `documentation/openapi.yaml` and update the matching `paths:` entry and `components/schemas:` section.
-3. Bump the patch version in `info.version` (e.g. `0.1.0` → `0.1.1`).
+→ Update the matching `paths:` entry and `components/schemas:` section.
 
-Do **not** skip this step even for small changes. The OpenAPI file is used as the source of truth for the API surface.
+### WebSocket changes (backend broadcasts or frontend subscriptions)
+Update whenever you:
+- Add a new STOMP topic the server publishes to (backend `messaging.convertAndSend(...)`)
+- Add a new STOMP subscription in any frontend view or composable (`.subscribe(...)`)
+- Change the payload schema of an existing topic
+- Add new client-side reactions to an existing topic (e.g. a new `phase` value triggers a new navigation)
+- Remove a topic or subscription
+
+→ Update the matching `webhooks:` entry in `openapi.yaml`. Each STOMP topic has one `webhooks` entry. Document: the topic path, what triggers a publish, and what the client is expected to do on receipt.
+
+### Every change
+Bump the patch version in `info.version` (e.g. `0.1.2` → `0.1.3`).
+
+Do **not** skip this step even for small changes. The OpenAPI file is the single source of truth for the full API surface — REST and real-time.
 
 ## Documentation Layout
 

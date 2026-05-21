@@ -23,7 +23,7 @@ info:
 
     Future in-game pushes will use per-player topics to support
     role-filtered state (Mr X position hidden from detectives).
-  version: 0.1.2
+  version: 0.1.3
 servers:
   - url: http://localhost:8080
     description: Local development server
@@ -180,6 +180,53 @@ paths:
           description: Player removed successfully (empty body)
         '400':
           $ref: '#/components/responses/BadRequest'
+
+# ---------------------------------------------------------------------------
+# WebSocket push messages (STOMP over SockJS at /ws)
+#
+# OpenAPI 3.1.0 has no native WebSocket support. The `webhooks` section is
+# used here to formally describe server-initiated STOMP messages — each entry
+# is one topic the client can subscribe to. The payload schema is the same
+# GameStateDTO used by the REST endpoints.
+# ---------------------------------------------------------------------------
+webhooks:
+
+  lobbyAndGameStatePush:
+    post:
+      summary: Game state broadcast
+      description: |
+        **STOMP topic:** `/topic/games/{gameId}`
+
+        The server publishes a `GameStateDTO` to this topic after every
+        state-changing operation. Subscribe immediately after creating or
+        joining a game and keep the subscription open until the game ends
+        or the player leaves.
+
+        **Triggered by:**
+        | REST call | What changes |
+        |---|---|
+        | `POST /api/games/join` | New player added to `players` |
+        | `POST /api/games/{id}/start` | `phase` → `IN_PROGRESS`; players gain roles and tickets |
+        | `POST /api/games/{id}/players/{targetId}/kick` | Target player removed from `players` |
+        | `DELETE /api/games/{id}/players/{playerId}` | Player removed; or `phase` → `ENDED` if Mr X left |
+
+        **Client-side reactions:**
+        - `phase === 'IN_PROGRESS'` → navigate to game board
+        - `phase === 'ENDED'` → show abort/end banner
+        - Own `playerId` absent from `players` while `phase === 'LOBBY'` → player was kicked; show kicked banner
+        - Connection drops unexpectedly → assume host closed the lobby
+
+        **Connection:** `new SockJS('/ws')` → STOMP `Client` → subscribe on `onConnect`.
+        Disconnect on unmount or when navigating away.
+      requestBody:
+        description: The updated game state pushed by the server.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameStateDTO'
+      responses:
+        '200':
+          description: Client acknowledges the message (STOMP ACK).
 
 components:
 
