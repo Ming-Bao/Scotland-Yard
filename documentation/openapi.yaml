@@ -1,8 +1,29 @@
 openapi: 3.1.0
 info:
   title: Scotland Yard Wellington API
-  description: REST API for the Scotland Yard Wellington multiplayer game backend.
-  version: 0.1.1
+  description: |
+    REST API for the Scotland Yard Wellington multiplayer game backend.
+
+    ## Real-time updates (WebSocket / STOMP)
+
+    The backend also exposes a STOMP-over-SockJS endpoint at `/ws`.
+    Clients connect using `@stomp/stompjs` + `sockjs-client`.
+
+    **Lobby topic** — subscribe after joining or creating a game:
+    ```
+    /topic/games/{gameId}
+    ```
+    The server publishes a `GameStateDTO` to this topic after every
+    state-changing operation: `join`, `start`, `leave`, and `kick`.
+    Clients use this push to update their UI without polling.
+
+    **Kick detection** — a client should check on each push whether
+    their own `playerId` is still present in `players`. If it is not
+    and `phase` is still `LOBBY`, the client was kicked.
+
+    Future in-game pushes will use per-player topics to support
+    role-filtered state (Mr X position hidden from detectives).
+  version: 0.1.2
 servers:
   - url: http://localhost:8080
     description: Local development server
@@ -36,7 +57,7 @@ paths:
   /api/games/join:
     post:
       summary: Join an existing game
-      description: Joins a LOBBY-phase game identified by its join code. Returns the joining player's ID and the updated game state.
+      description: Joins a LOBBY-phase game identified by its join code. Returns the joining player's ID and the updated game state. Also broadcasts the updated `GameStateDTO` to `/topic/games/{gameId}` so all lobby subscribers see the new player immediately.
       operationId: joinGame
       requestBody:
         required: true
@@ -77,7 +98,12 @@ paths:
   /api/games/{id}/start:
     post:
       summary: Start the game
-      description: Transitions the game from LOBBY to IN_PROGRESS. Only the host may call this. Requires at least 2 players. Roles and starting nodes are assigned randomly by the server.
+      description: |
+        Transitions the game from LOBBY to IN_PROGRESS. Only the host may call this. Requires at least 2 players.
+        One player is randomly assigned `MR_X` (unlimited transport tickets, 2 DOUBLE, N BLACK where N = detective count);
+        the rest become `DETECTIVE` (finite ticket counts from server config).
+        Also broadcasts the updated `GameStateDTO` to `/topic/games/{gameId}` — all lobby subscribers
+        detect `phase: IN_PROGRESS` and navigate to the game board.
       operationId: startGame
       parameters:
         - $ref: '#/components/parameters/GameId'
@@ -102,7 +128,10 @@ paths:
   /api/games/{id}/players/{targetPlayerId}/kick:
     post:
       summary: Kick a player from the lobby
-      description: Host-only. Removes another player from the game during the LOBBY phase. Cannot kick yourself or kick during an active game.
+      description: |
+        Host-only. Removes another player from the game during the LOBBY phase. Cannot kick yourself or kick during an active game.
+        Broadcasts the updated `GameStateDTO` to `/topic/games/{gameId}`. The kicked player detects removal
+        by checking that their own `playerId` is no longer present in `players` while `phase` is still `LOBBY`.
       operationId: kickPlayer
       parameters:
         - $ref: '#/components/parameters/GameId'
@@ -132,10 +161,10 @@ paths:
       summary: Leave the game
       description: |
         Removes a player from the game.
-        - **Lobby phase, host leaves**: game session is deleted entirely.
-        - **Lobby phase, non-host leaves**: player is removed; remaining players continue waiting.
-        - **In-progress phase, Mr X leaves**: game ends immediately (`phase: ENDED`, `abortReason` set).
-        - **In-progress phase, detective leaves**: player removed; their turns are auto-skipped going forward.
+        - **Lobby phase, host leaves**: game session is deleted entirely (no broadcast; subscribers get a disconnect error).
+        - **Lobby phase, non-host leaves**: player is removed; broadcasts updated state to `/topic/games/{gameId}`.
+        - **In-progress phase, Mr X leaves**: game ends immediately (`phase: ENDED`, `abortReason` set); broadcasts final state.
+        - **In-progress phase, detective leaves**: player removed; broadcasts updated state.
       operationId: leaveGame
       parameters:
         - $ref: '#/components/parameters/GameId'
@@ -307,14 +336,20 @@ components:
         tickets:
           type: object
           nullable: true
-          description: Ticket counts keyed by TicketType; -1 means unlimited. Null until game starts.
+          description: |
+            Ticket counts keyed by TicketType. Null until game starts.
+            `-1` means unlimited (Mr X transport tickets only).
+            Mr X holds: ESCOOTER(-1), BUS(-1), TRAIN(-1), FERRY(-1), DOUBLE(2), BLACK(N detectives).
+            Detectives hold: ESCOOTER, BUS, TRAIN, FERRY with finite counts from server config. No DOUBLE or BLACK.
           additionalProperties:
             type: integer
           example:
-            ESCOOTER: 10
-            BUS: 8
-            TRAIN: 4
-            FERRY: 2
+            ESCOOTER: -1
+            BUS: -1
+            TRAIN: -1
+            FERRY: -1
+            DOUBLE: 2
+            BLACK: 3
 
     GamePhase:
       type: string

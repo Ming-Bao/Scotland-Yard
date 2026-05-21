@@ -2,14 +2,21 @@
   <div class="page">
     <div class="content">
 
+      <!-- Kicked banner -->
+      <div v-if="kicked" class="kicked-banner">
+        <p class="kicked-title">You were kicked</p>
+        <p class="kicked-message">The host removed you from the lobby.</p>
+        <RouterLink to="/" class="kicked-link">Return to home</RouterLink>
+      </div>
+
       <!-- Abort banner -->
-      <div v-if="aborted" class="abort-banner">
+      <div v-else-if="aborted" class="abort-banner">
         <p class="abort-title">Game ended</p>
         <p class="abort-message">{{ abortMessage }}</p>
         <RouterLink to="/" class="abort-link">Back to home</RouterLink>
       </div>
 
-      <template v-else>
+      <template v-else-if="!kicked && !aborted">
         <PageHeader title="Game Lobby" @back="handleLeave" />
 
         <JoinCodeCard :code="gameState?.joinCode ?? ''" />
@@ -17,6 +24,8 @@
         <PlayerSlotList
           :players="gameState?.players ?? []"
           :max-players="gameState?.maxPlayers ?? 0"
+          :host-player-id="isHost ? store.playerId ?? undefined : undefined"
+          @kick="handleKick"
         />
 
         <!-- Start / waiting -->
@@ -44,8 +53,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getGame, startGame, leaveGame } from '../api/gameApi'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
+import { startGame, leaveGame, kickPlayer } from '../api/gameApi'
 import { useGameStore } from '../stores/gameStore'
+import type { GameStateDTO } from '../types/game'
 import PageHeader from '../components/ui/PageHeader.vue'
 import ErrorBanner from '../components/ui/ErrorBanner.vue'
 import JoinCodeCard from '../components/lobby/JoinCodeCard.vue'
@@ -62,42 +74,50 @@ const canStart = computed(() => (gameState.value?.players.length ?? 0) >= 2)
 
 const starting = ref(false)
 const startError = ref('')
+const kicked = ref(false)
 const aborted = ref(false)
 const abortMessage = ref('')
 
-let pollInterval: ReturnType<typeof setInterval> | null = null
+let stompClient: Client | null = null
 
 onMounted(() => {
-  if (!store.gameState && store.gameId) fetchState()
-  if (gameId.value !== 'preview') {
-    pollInterval = setInterval(fetchState, 2000)
-  }
+  if (gameId.value === 'preview') return
+  stompClient = new Client({
+    webSocketFactory: () => new SockJS('/ws'),
+    onConnect: () => {
+      stompClient!.subscribe(`/topic/games/${gameId.value}`, (msg) => {
+        const state: GameStateDTO = JSON.parse(msg.body)
+        const stillInGame = state.players.some(p => p.id === store.playerId)
+        if (!stillInGame && state.phase === 'LOBBY') {
+          stompClient?.deactivate()
+          store.clearGame()
+          kicked.value = true
+          return
+        }
+        store.updateGameState(state)
+        if (state.phase === 'IN_PROGRESS') {
+          stompClient?.deactivate()
+          router.push(`/game/${gameId.value}`)
+        } else if (state.phase === 'ENDED') {
+          stompClient?.deactivate()
+          aborted.value = true
+          abortMessage.value = state.abortReason ?? 'The game has ended'
+        }
+      })
+    },
+    onDisconnect: () => {
+      if (!aborted.value && !kicked.value) {
+        aborted.value = true
+        abortMessage.value = 'Lost connection to the server'
+      }
+    },
+  })
+  stompClient.activate()
 })
 
 onUnmounted(() => {
-  if (pollInterval) clearInterval(pollInterval)
+  stompClient?.deactivate()
 })
-
-async function fetchState() {
-  const id = gameId.value
-  if (!id || id === 'preview') return
-  try {
-    const state = await getGame(id)
-    store.updateGameState(state)
-    if (state.phase === 'IN_PROGRESS') {
-      clearInterval(pollInterval!)
-      router.push(`/game/${id}`)
-    } else if (state.phase === 'ENDED') {
-      clearInterval(pollInterval!)
-      aborted.value = true
-      abortMessage.value = state.abortReason ?? 'The game has ended'
-    }
-  } catch {
-    clearInterval(pollInterval!)
-    aborted.value = true
-    abortMessage.value = 'The host has closed the lobby'
-  }
-}
 
 async function handleStart() {
   if (!store.playerId || !gameId.value) return
@@ -114,8 +134,17 @@ async function handleStart() {
   }
 }
 
+async function handleKick(targetPlayerId: string) {
+  if (!store.playerId || !gameId.value) return
+  try {
+    await kickPlayer(gameId.value, store.playerId, targetPlayerId)
+  } catch (e: unknown) {
+    startError.value = e instanceof Error ? e.message : 'Failed to kick player'
+  }
+}
+
 async function handleLeave() {
-  if (pollInterval) clearInterval(pollInterval)
+  stompClient?.deactivate()
   const id = gameId.value
   const pid = store.playerId
   if (id && pid && id !== 'preview') {
@@ -134,6 +163,19 @@ async function handleLeave() {
 }
 .content {
   @apply w-full max-w-md space-y-6;
+}
+.kicked-banner {
+  @apply bg-orange-900/20 border border-orange-700 rounded-lg px-4 py-6 text-center space-y-3;
+}
+.kicked-title {
+  @apply text-orange-400 font-semibold text-lg;
+}
+.kicked-message {
+  @apply text-orange-300 text-sm;
+}
+.kicked-link {
+  @apply inline-block mt-1 bg-gray-800 hover:bg-gray-700 text-white text-sm
+         font-medium px-4 py-2 rounded-lg transition-colors;
 }
 .abort-banner {
   @apply bg-red-900/20 border border-red-700 rounded-lg px-4 py-4 text-center space-y-2;

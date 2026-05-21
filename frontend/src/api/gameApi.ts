@@ -46,6 +46,18 @@ export async function startGame(gameId: string, playerId: string): Promise<GameS
     return handleResponse(res);
 }
 
+export async function kickPlayer(gameId: string, hostId: string, targetPlayerId: string): Promise<void> {
+    const res = await fetch(`/api/games/${gameId}/players/${targetPlayerId}/kick`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hostId }),
+    });
+    if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Failed to kick player");
+    }
+}
+
 export async function leaveGame(gameId: string, playerId: string): Promise<void> {
     const res = await fetch(`/api/games/${gameId}/players/${playerId}`, {
         method: "DELETE",

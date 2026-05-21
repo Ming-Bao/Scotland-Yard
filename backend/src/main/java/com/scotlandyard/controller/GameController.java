@@ -3,6 +3,7 @@ package com.scotlandyard.controller;
 import com.scotlandyard.dto.CreateGameRequest;
 import com.scotlandyard.dto.GameStateDTO;
 import com.scotlandyard.dto.JoinGameRequest;
+import com.scotlandyard.dto.KickPlayerRequest;
 import com.scotlandyard.dto.StartGameRequest;
 import com.scotlandyard.service.GameService;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +64,19 @@ public class GameController {
     public ResponseEntity<?> leaveGame(@PathVariable String id, @PathVariable String playerId) {
         try {
             gameService.leaveGame(id, playerId);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/players/{targetPlayerId}/kick")
+    public ResponseEntity<?> kickPlayer(
+            @PathVariable String id,
+            @PathVariable String targetPlayerId,
+            @RequestBody KickPlayerRequest req) {
+        try {
+            gameService.kickPlayer(id, req.getHostId(), targetPlayerId);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

@@ -4,9 +4,13 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
+  define: {
+    global: 'globalThis',
+  },
   server: {
     proxy: {
-      '/api': 'http://localhost:8999'
+      '/api': 'http://localhost:8999',
+      '/ws': { target: 'http://localhost:8999', ws: true },
     }
   }
 })
