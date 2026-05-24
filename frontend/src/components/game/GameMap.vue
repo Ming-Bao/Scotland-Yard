@@ -27,30 +27,30 @@
         <circle
           v-if="selectedNode?.id === node.id"
           :cx="node.x" :cy="node.y" r="24"
-          fill="none" stroke="white" stroke-width="2" opacity="0.7"
+          fill="none" :stroke="selectionRing" stroke-width="2" opacity="0.7"
         />
         <circle
           v-if="isReachable(node.id)"
           :cx="node.x" :cy="node.y" r="20"
-          fill="white" fill-opacity="0.08"
+          :fill="reachableHighlight" fill-opacity="0.08"
         />
         <circle
           :cx="node.x" :cy="node.y" r="16"
-          :fill="playerNode === node.id ? '#2563eb' : '#1f2937'"
-          :stroke="selectedNode?.id === node.id ? '#fff' : '#4b5563'"
+          :fill="playerNode === node.id ? '#2563eb' : nodeFill"
+          :stroke="selectedNode?.id === node.id ? selectionRing : nodeStroke"
           stroke-width="1.5"
         />
         <text
           :x="node.x" :y="node.y"
           text-anchor="middle" dominant-baseline="middle"
           font-size="11" font-family="monospace" font-weight="600"
-          fill="white"
+          :fill="playerNode === node.id ? 'white' : nodeTextFill"
         >{{ node.id }}</text>
         <text
           :x="node.x" :y="node.y + 28"
           text-anchor="middle"
           font-size="9" font-family="sans-serif"
-          fill="#6b7280"
+          :fill="nodeLabelFill"
         >{{ node.label }}</text>
       </g>
     </svg>
@@ -66,8 +66,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { GraphNode, GraphEdge } from '../../types/game'
 import { modeColor, modeLabel, modeLegend } from '../../utils/transportModes'
+import { useThemeStore } from '../../stores/themeStore'
 
 const props = defineProps<{
   nodes: GraphNode[]
@@ -77,6 +79,14 @@ const props = defineProps<{
 }>()
 
 defineEmits<{ 'select-node': [node: GraphNode | null] }>()
+
+const theme = useThemeStore()
+const nodeFill = computed(() => theme.isDark ? '#1f2937' : '#f3f4f6')
+const nodeStroke = computed(() => theme.isDark ? '#4b5563' : '#d1d5db')
+const nodeTextFill = computed(() => theme.isDark ? 'white' : '#111827')
+const nodeLabelFill = computed(() => theme.isDark ? '#6b7280' : '#9ca3af')
+const reachableHighlight = computed(() => theme.isDark ? 'white' : 'black')
+const selectionRing = computed(() => theme.isDark ? 'white' : '#111827')
 
 function nodeById(id: number): GraphNode {
   return props.nodes.find(n => n.id === id)!
@@ -93,9 +103,10 @@ function isReachable(nodeId: number): boolean {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .map-panel {
-  @apply flex-1 relative bg-gray-950 overflow-hidden;
+  @apply flex-1 relative bg-gray-50 dark:bg-gray-950 overflow-hidden;
 }
 .map-svg {
   @apply w-full h-full;

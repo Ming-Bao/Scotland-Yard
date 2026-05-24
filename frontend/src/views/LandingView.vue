@@ -39,9 +39,10 @@ import { Users, UserPlus } from 'lucide-vue-next'
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .page {
-  @apply min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4;
+  @apply min-h-screen bg-white dark:bg-gray-950 flex flex-col items-center justify-center px-4;
 }
 .hero {
   @apply text-center space-y-8 max-w-md w-full;
@@ -50,13 +51,13 @@ import { Users, UserPlus } from 'lucide-vue-next'
   @apply space-y-2;
 }
 .title {
-  @apply text-4xl font-bold text-white;
+  @apply text-4xl font-bold text-gray-900 dark:text-white;
 }
 .subtitle {
   @apply text-blue-400 italic text-lg;
 }
 .tagline {
-  @apply text-gray-400 text-sm;
+  @apply text-gray-600 dark:text-gray-400 text-sm;
 }
 .btn-group {
   @apply flex flex-col gap-3;
@@ -66,19 +67,21 @@ import { Users, UserPlus } from 'lucide-vue-next'
          text-white font-medium py-3 px-6 rounded-lg transition-colors;
 }
 .btn-secondary {
-  @apply flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600
-         text-white font-medium py-3 px-6 rounded-lg transition-colors;
+  @apply flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700
+         hover:bg-gray-300 dark:hover:bg-gray-600
+         text-gray-800 dark:text-white font-medium py-3 px-6 rounded-lg transition-colors;
 }
 .dev-nav {
   @apply absolute bottom-4 left-0 right-0 flex justify-center;
 }
 .dev-nav-inner {
-  @apply border border-gray-800 rounded-lg px-4 py-2 flex items-center gap-1;
+  @apply border border-gray-200 dark:border-gray-800 rounded-lg px-4 py-2 flex items-center gap-1;
 }
 .dev-label {
-  @apply text-gray-600 text-xs mr-2;
+  @apply text-gray-400 dark:text-gray-600 text-xs mr-2;
 }
 .dev-link {
-  @apply text-gray-500 hover:text-gray-300 text-xs px-2 py-1 rounded hover:bg-gray-800 transition-colors;
+  @apply text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 text-xs px-2 py-1 rounded
+         hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors;
 }
 </style>

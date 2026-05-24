@@ -67,15 +67,16 @@ async function handleJoin() {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .page {
-  @apply min-h-screen bg-gray-950 flex items-center justify-center px-4;
+  @apply min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center px-4;
 }
 .content {
   @apply w-full max-w-md space-y-6;
 }
 .card {
-  @apply bg-gray-900 rounded-lg p-6 space-y-4;
+  @apply bg-gray-100 dark:bg-gray-900 rounded-lg p-6 space-y-4;
 }
 .btn-primary {
   @apply w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50

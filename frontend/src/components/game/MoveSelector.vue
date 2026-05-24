@@ -55,6 +55,7 @@ defineEmits<{
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .move-section {
   @apply p-4;
@@ -63,7 +64,7 @@ defineEmits<{
   @apply text-xs text-gray-500 uppercase tracking-wider mb-1;
 }
 .node-name {
-  @apply text-white font-medium mb-1;
+  @apply text-gray-900 dark:text-white font-medium mb-1;
 }
 .node-id {
   @apply text-xs text-gray-500 font-mono mb-3;
@@ -76,10 +77,10 @@ defineEmits<{
 }
 .ticket-btn {
   @apply px-3 py-1.5 rounded-lg text-xs font-semibold border bg-transparent
-         hover:bg-white/5 transition-colors;
+         hover:bg-black/5 dark:hover:bg-white/5 transition-colors;
 }
 .ticket-btn--selected {
-  @apply bg-white/10;
+  @apply bg-black/10 dark:bg-white/10;
 }
 .confirm-btn {
   @apply w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed

@@ -15,14 +15,15 @@ defineEmits<{ back: [] }>()
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .header {
   @apply flex items-center gap-3;
 }
 .back-btn {
-  @apply text-gray-400 hover:text-white transition-colors;
+  @apply text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
 }
 .title {
-  @apply text-2xl font-bold text-white;
+  @apply text-2xl font-bold text-gray-900 dark:text-white;
 }
 </style>

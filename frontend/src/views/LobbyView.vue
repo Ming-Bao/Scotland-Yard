@@ -157,9 +157,10 @@ async function handleLeave() {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .page {
-  @apply min-h-screen bg-gray-950 flex items-center justify-center px-4;
+  @apply min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center px-4;
 }
 .content {
   @apply w-full max-w-md space-y-6;
@@ -174,8 +175,8 @@ async function handleLeave() {
   @apply text-orange-300 text-sm;
 }
 .kicked-link {
-  @apply inline-block mt-1 bg-gray-800 hover:bg-gray-700 text-white text-sm
-         font-medium px-4 py-2 rounded-lg transition-colors;
+  @apply inline-block mt-1 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700
+         text-gray-800 dark:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors;
 }
 .abort-banner {
   @apply bg-red-900/20 border border-red-700 rounded-lg px-4 py-4 text-center space-y-2;
@@ -187,7 +188,7 @@ async function handleLeave() {
   @apply text-red-300 text-sm;
 }
 .abort-link {
-  @apply inline-block mt-2 text-sm text-gray-400 hover:text-white transition-colors;
+  @apply inline-block mt-2 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
 }
 .start-section {
   @apply space-y-2;
@@ -197,12 +198,13 @@ async function handleLeave() {
          text-white font-medium py-3 rounded-lg transition-colors;
 }
 .start-hint {
-  @apply text-gray-600 text-xs text-center;
+  @apply text-gray-500 dark:text-gray-600 text-xs text-center;
 }
 .waiting-text {
   @apply text-center text-gray-500 text-sm py-2;
 }
 .btn-leave {
-  @apply w-full bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium py-2.5 rounded-lg transition-colors;
+  @apply w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700
+         text-gray-800 dark:text-white text-sm font-medium py-2.5 rounded-lg transition-colors;
 }
 </style>

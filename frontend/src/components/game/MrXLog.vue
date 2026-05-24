@@ -19,9 +19,10 @@ defineProps<{ log: MrXLogEntry[] }>()
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .log-section {
-  @apply p-4 border-b border-gray-800;
+  @apply p-4 border-b border-gray-200 dark:border-gray-800;
 }
 .section-label {
   @apply text-xs text-gray-500 uppercase tracking-wider mb-3;
@@ -39,6 +40,6 @@ defineProps<{ log: MrXLogEntry[] }>()
   @apply text-xs font-medium;
 }
 .log-node {
-  @apply text-xs text-gray-400 font-mono;
+  @apply text-xs text-gray-500 dark:text-gray-400 font-mono;
 }
 </style>

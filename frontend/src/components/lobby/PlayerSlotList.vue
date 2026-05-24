@@ -38,12 +38,13 @@ const emptySlots = computed(() => Math.max(0, props.maxPlayers - props.players.l
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .slot-list {
-  @apply bg-gray-900 rounded-lg p-6 space-y-3;
+  @apply bg-gray-100 dark:bg-gray-900 rounded-lg p-6 space-y-3;
 }
 .slot-header {
-  @apply text-sm text-gray-400 font-medium;
+  @apply text-sm text-gray-600 dark:text-gray-400 font-medium;
 }
 .player-row {
   @apply flex items-center justify-between py-2;
@@ -52,7 +53,7 @@ const emptySlots = computed(() => Math.max(0, props.maxPlayers - props.players.l
   @apply flex items-center gap-2;
 }
 .player-name {
-  @apply text-white;
+  @apply text-gray-900 dark:text-white;
 }
 .badge-host {
   @apply text-xs bg-blue-600/20 text-blue-400 px-2 py-0.5 rounded-full;
@@ -65,6 +66,6 @@ const emptySlots = computed(() => Math.max(0, props.maxPlayers - props.players.l
          px-2 py-0.5 rounded transition-colors;
 }
 .empty-slot {
-  @apply border border-dashed border-gray-700 rounded-lg py-2 px-3 text-gray-500 text-sm;
+  @apply border border-dashed border-gray-300 dark:border-gray-700 rounded-lg py-2 px-3 text-gray-400 dark:text-gray-500 text-sm;
 }
 </style>

@@ -28,20 +28,21 @@ async function copyCode() {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .code-card {
-  @apply bg-gray-900 rounded-lg p-6 space-y-3;
+  @apply bg-gray-100 dark:bg-gray-900 rounded-lg p-6 space-y-3;
 }
 .card-hint {
-  @apply text-sm text-gray-400;
+  @apply text-sm text-gray-600 dark:text-gray-400;
 }
 .code-row {
   @apply flex items-center justify-between gap-3;
 }
 .code-text {
-  @apply text-3xl font-mono font-bold tracking-widest text-white;
+  @apply text-3xl font-mono font-bold tracking-widest text-gray-900 dark:text-white;
 }
 .copy-btn {
-  @apply text-gray-400 hover:text-white transition-colors;
+  @apply text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
 }
 </style>

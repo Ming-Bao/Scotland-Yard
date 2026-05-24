@@ -63,12 +63,13 @@ defineEmits<{
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .info-panel {
-  @apply w-72 bg-gray-900 border-l border-gray-800 flex flex-col overflow-y-auto shrink-0;
+  @apply w-72 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-y-auto shrink-0;
 }
 .panel-section {
-  @apply p-4 border-b border-gray-800;
+  @apply p-4 border-b border-gray-200 dark:border-gray-800;
 }
 .section-label {
   @apply text-xs text-gray-500 uppercase tracking-wider mb-3;
@@ -83,18 +84,19 @@ defineEmits<{
   @apply w-2.5 h-2.5 rounded-full;
 }
 .player-name {
-  @apply text-sm text-white;
+  @apply text-sm text-gray-900 dark:text-white;
 }
 .player-you {
-  @apply text-xs text-gray-600;
+  @apply text-xs text-gray-500 dark:text-gray-600;
 }
 .player-location {
   @apply text-xs text-gray-500 font-mono;
 }
 .leave-section {
-  @apply p-4 mt-auto border-t border-gray-800;
+  @apply p-4 mt-auto border-t border-gray-200 dark:border-gray-800;
 }
 .leave-btn {
-  @apply w-full bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium py-2 rounded-lg transition-colors;
+  @apply w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700
+         text-gray-800 dark:text-white text-sm font-medium py-2 rounded-lg transition-colors;
 }
 </style>

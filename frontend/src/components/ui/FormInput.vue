@@ -34,15 +34,17 @@ function handleInput(e: Event) {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .field {
   @apply space-y-1;
 }
 .field-label {
-  @apply text-sm text-gray-400;
+  @apply text-sm text-gray-600 dark:text-gray-400;
 }
 .field-input {
-  @apply w-full bg-gray-800 text-white rounded-lg px-4 py-2.5 outline-none
-         focus:ring-2 focus:ring-blue-600 placeholder-gray-500;
+  @apply w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white rounded-lg px-4 py-2.5 outline-none
+         border border-gray-300 dark:border-transparent
+         focus:ring-2 focus:ring-blue-600 placeholder-gray-400 dark:placeholder-gray-500;
 }
 </style>

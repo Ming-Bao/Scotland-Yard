@@ -137,33 +137,34 @@ async function handleLeave() {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .page {
-  @apply h-screen bg-gray-950 flex flex-col overflow-hidden;
+  @apply h-screen bg-gray-50 dark:bg-gray-950 flex flex-col overflow-hidden;
 }
 .header {
-  @apply bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between shrink-0;
+  @apply bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between shrink-0;
 }
 .header-left {
   @apply flex items-center gap-3;
 }
 .back-btn {
-  @apply text-gray-400 hover:text-white transition-colors;
+  @apply text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
 }
 .game-title {
-  @apply text-white font-bold;
+  @apply text-gray-900 dark:text-white font-bold;
 }
 .game-subtitle {
-  @apply text-gray-600 text-sm font-mono;
+  @apply text-gray-500 dark:text-gray-600 text-sm font-mono;
 }
 .header-right {
   @apply flex items-center gap-4;
 }
 .round-label {
-  @apply text-gray-400 text-sm;
+  @apply text-gray-600 dark:text-gray-400 text-sm;
 }
 .round-num {
-  @apply text-white font-mono;
+  @apply text-gray-900 dark:text-white font-mono;
 }
 .turn-badge {
   @apply bg-blue-600/20 text-blue-400 text-sm px-3 py-1 rounded-full;

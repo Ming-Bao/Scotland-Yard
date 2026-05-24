@@ -17,9 +17,10 @@ defineProps<{ tickets: DemoTicket[] }>()
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .ticket-section {
-  @apply p-4 border-b border-gray-800;
+  @apply p-4 border-b border-gray-200 dark:border-gray-800;
 }
 .section-label {
   @apply text-xs text-gray-500 uppercase tracking-wider mb-3;
@@ -28,12 +29,12 @@ defineProps<{ tickets: DemoTicket[] }>()
   @apply grid grid-cols-2 gap-2;
 }
 .ticket-pill {
-  @apply flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2;
+  @apply flex items-center justify-between bg-gray-200 dark:bg-gray-800 rounded-lg px-3 py-2;
 }
 .ticket-name {
   @apply text-xs font-medium;
 }
 .ticket-count {
-  @apply text-white text-sm font-mono font-bold;
+  @apply text-gray-900 dark:text-white text-sm font-mono font-bold;
 }
 </style>

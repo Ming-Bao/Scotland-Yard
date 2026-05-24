@@ -61,24 +61,27 @@ async function handleCreate() {
 
 <style scoped>
 @reference "tailwindcss";
+@variant dark (&:is(.dark *));
 
 .page {
-  @apply min-h-screen bg-gray-950 flex items-center justify-center px-4;
+  @apply min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center px-4;
 }
 .content {
   @apply w-full max-w-md space-y-6;
 }
 .card {
-  @apply bg-gray-900 rounded-lg p-6 space-y-4;
+  @apply bg-gray-100 dark:bg-gray-900 rounded-lg p-6 space-y-4;
 }
 .field {
   @apply space-y-1;
 }
 .field-label {
-  @apply text-sm text-gray-400;
+  @apply text-sm text-gray-600 dark:text-gray-400;
 }
 .select {
-  @apply w-full bg-gray-800 text-white rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-600;
+  @apply w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+         border border-gray-300 dark:border-transparent
+         rounded-lg px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-600;
 }
 .btn-primary {
   @apply w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50
