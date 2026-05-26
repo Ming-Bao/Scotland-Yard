@@ -54,9 +54,6 @@ classDiagram
 
 ```mermaid
 classDiagram
-
-```mermaid
-classDiagram
     %% ── Enums ──────────────────────────────────────────────────────────────
 
     class GamePhase {
