@@ -2,6 +2,9 @@ package com.scotlandyard.service;
 
 import com.scotlandyard.dto.GameStateDTO;
 import com.scotlandyard.dto.PlayerDTO;
+import com.scotlandyard.exception.ConflictException;
+import com.scotlandyard.exception.ForbiddenException;
+import com.scotlandyard.exception.GameNotFoundException;
 import com.scotlandyard.model.*;
 import com.scotlandyard.repository.GameRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,9 +47,9 @@ public class GameService {
 
     public CreateResult createGame(String hostName, int maxPlayers) {
         if (hostName == null || hostName.isBlank())
-            throw new IllegalArgumentException("Host name is required");
+            throw new IllegalArgumentException("Game not created");
         if (maxPlayers < 2 || maxPlayers > 6)
-            throw new IllegalArgumentException("Max players must be between 2 and 6");
+            throw new IllegalArgumentException("Game not created");
 
         String gameId   = UUID.randomUUID().toString();
         String playerId = UUID.randomUUID().toString();
@@ -72,12 +75,12 @@ public class GameService {
             throw new IllegalArgumentException("Player name is required");
 
         GameSession session = gameRepository.findByJoinCode(joinCode.toUpperCase().trim())
-                .orElseThrow(() -> new IllegalArgumentException("Game not found"));
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
 
         if (session.getPhase() != GamePhase.LOBBY)
-            throw new IllegalArgumentException("Game is not in the lobby phase");
+            throw new ConflictException("Game is not in the lobby phase");
         if (session.getPlayers().size() >= session.getMaxPlayers())
-            throw new IllegalArgumentException("Game is full");
+            throw new ConflictException("Game is full");
 
         String playerId = UUID.randomUUID().toString();
         Player player = new LobbyPlayer(playerId, playerName.trim());
@@ -88,14 +91,20 @@ public class GameService {
         return new JoinResult(playerId, toDTO(session));
     }
 
+    public GameStateDTO getGame(String gameId) {
+        GameSession session = gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
+        return toDTO(session);
+    }
+
     public GameStateDTO startGame(String gameId, String requestingPlayerId) {
         GameSession session = gameRepository.findById(gameId)
-                .orElseThrow(() -> new IllegalArgumentException("Game not found"));
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
 
         if (!requestingPlayerId.equals(session.getHostPlayerId()))
-            throw new IllegalArgumentException("Only the host can start the game");
+            throw new ForbiddenException("Only the host can start the game");
         if (session.getPhase() != GamePhase.LOBBY)
-            throw new IllegalArgumentException("Game is not in the lobby phase");
+            throw new ConflictException("Game is not in the lobby phase");
         if (session.getPlayers().size() < 2)
             throw new IllegalArgumentException("Need at least 2 players to start");
 
@@ -127,12 +136,12 @@ public class GameService {
 
     public void leaveGame(String gameId, String playerId) {
         GameSession session = gameRepository.findById(gameId)
-                .orElseThrow(() -> new IllegalArgumentException("Game not found"));
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
 
         Player leavingPlayer = session.getPlayers().stream()
                 .filter(p -> p.getId().equals(playerId))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Player not in game"));
+                .orElseThrow(() -> new GameNotFoundException("Player not in game"));
 
         if (session.getPhase() == GamePhase.IN_PROGRESS && leavingPlayer instanceof MrXPlayer) {
             session.setPhase(GamePhase.ENDED);
@@ -157,27 +166,21 @@ public class GameService {
 
     public void kickPlayer(String gameId, String hostId, String targetPlayerId) {
         GameSession session = gameRepository.findById(gameId)
-                .orElseThrow(() -> new IllegalArgumentException("Game not found"));
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
 
         if (!hostId.equals(session.getHostPlayerId()))
-            throw new IllegalArgumentException("Only the host can kick players");
+            throw new ForbiddenException("Only the host can kick players");
         if (session.getPhase() != GamePhase.LOBBY)
-            throw new IllegalArgumentException("Players can only be kicked during the lobby");
+            throw new ConflictException("Players can only be kicked during the lobby");
         if (hostId.equals(targetPlayerId))
             throw new IllegalArgumentException("Host cannot kick themselves");
 
         boolean removed = session.getPlayers().removeIf(p -> p.getId().equals(targetPlayerId));
         if (!removed)
-            throw new IllegalArgumentException("Player not in game");
+            throw new GameNotFoundException("Game or player not found");
 
         gameRepository.save(session);
         broadcast(session);
-    }
-
-    public GameStateDTO getGame(String gameId) {
-        GameSession session = gameRepository.findById(gameId)
-                .orElseThrow(() -> new IllegalArgumentException("Game not found"));
-        return toDTO(session);
     }
 
     private GameStateDTO toDTO(GameSession session) {

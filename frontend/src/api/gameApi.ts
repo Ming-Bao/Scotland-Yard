@@ -8,11 +8,18 @@ async function handleResponse<T>(res: Response): Promise<T> {
     return data as T;
 }
 
+async function handleNoContent(res: Response): Promise<void> {
+    if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error ?? "Request failed");
+    }
+}
+
 export async function createGame(
     hostName: string,
     maxPlayers: number,
 ): Promise<{ playerId: string; gameState: GameStateDTO }> {
-    const res = await fetch("/api/games", {
+    const res = await fetch("/api/games/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hostName, maxPlayers }),
@@ -46,24 +53,18 @@ export async function startGame(gameId: string, playerId: string): Promise<GameS
     return handleResponse(res);
 }
 
-export async function kickPlayer(gameId: string, hostId: string, targetPlayerId: string): Promise<void> {
-    const res = await fetch(`/api/games/${gameId}/players/${targetPlayerId}/kick`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ hostId }),
-    });
-    if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to kick player");
-    }
-}
-
 export async function leaveGame(gameId: string, playerId: string): Promise<void> {
     const res = await fetch(`/api/games/${gameId}/players/${playerId}`, {
         method: "DELETE",
     });
-    if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to leave game");
-    }
+    return handleNoContent(res);
+}
+
+export async function kickPlayer(gameId: string, hostId: string, targetPlayerId: string): Promise<void> {
+    const res = await fetch(`/api/games/${gameId}/players/${targetPlayerId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requesterId: hostId }),
+    });
+    return handleNoContent(res);
 }
