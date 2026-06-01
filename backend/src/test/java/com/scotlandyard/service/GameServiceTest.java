@@ -1,6 +1,9 @@
 package com.scotlandyard.service;
 
 import com.scotlandyard.dto.GameStateDTO;
+import com.scotlandyard.exception.ConflictException;
+import com.scotlandyard.exception.ForbiddenException;
+import com.scotlandyard.exception.GameNotFoundException;
 import com.scotlandyard.model.*;
 import com.scotlandyard.repository.GameRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,10 +22,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Unit tests for GameService with mocked dependencies.
- * Covers validation logic, state transitions, and rule enforcement.
- */
 @ExtendWith(MockitoExtension.class)
 class GameServiceTest {
 
@@ -63,33 +62,35 @@ class GameServiceTest {
     }
 
     @Test
-    void createGame_blankName_throws() {
+    void createGame_blankName_throwsWithGameNotCreatedMessage() {
         assertThatThrownBy(() -> gameService.createGame("  ", 4))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("name");
+                .hasMessage("Game not created");
     }
 
     @Test
-    void createGame_nullName_throws() {
+    void createGame_nullName_throwsWithGameNotCreatedMessage() {
         assertThatThrownBy(() -> gameService.createGame(null, 4))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Game not created");
     }
 
     @Test
-    void createGame_maxPlayersBelow2_throws() {
+    void createGame_maxPlayersBelow2_throwsWithGameNotCreatedMessage() {
         assertThatThrownBy(() -> gameService.createGame("Alice", 1))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Game not created");
     }
 
     @Test
-    void createGame_maxPlayersAbove6_throws() {
+    void createGame_maxPlayersAbove6_throwsWithGameNotCreatedMessage() {
         assertThatThrownBy(() -> gameService.createGame("Alice", 7))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Game not created");
     }
 
     @Test
     void createGame_doesNotBroadcast() {
-        // no topic exists before anyone joins; broadcasting would target a void channel
         when(gameRepository.save(any())).thenAnswer(i -> i.getArgument(0));
         gameService.createGame("Alice", 4);
         verify(messaging, never()).convertAndSend(anyString(), any(Object.class));
@@ -118,30 +119,30 @@ class GameServiceTest {
     }
 
     @Test
-    void joinGame_unknownCode_throws() {
+    void joinGame_unknownCode_throwsGameNotFoundException() {
         when(gameRepository.findByJoinCode(any())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> gameService.joinGame("XXXXXX", "Bob"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(GameNotFoundException.class)
                 .hasMessageContaining("not found");
     }
 
     @Test
-    void joinGame_gameNotInLobby_throws() {
+    void joinGame_gameNotInLobby_throwsConflictException() {
         GameSession session = lobbySession(4);
         session.setPhase(GamePhase.IN_PROGRESS);
         when(gameRepository.findByJoinCode(any())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.joinGame("ABC123", "Bob"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("lobby");
     }
 
     @Test
-    void joinGame_gameFull_throws() {
+    void joinGame_gameFull_throwsConflictException() {
         GameSession session = lobbySession(2);
         session.getPlayers().add(new LobbyPlayer("p2", "Bob"));
         when(gameRepository.findByJoinCode(any())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.joinGame("ABC123", "Charlie"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("full");
     }
 
@@ -160,7 +161,6 @@ class GameServiceTest {
 
     @Test
     void joinGame_lowercaseCodeIsNormalized() {
-        // join codes are stored uppercase; lowercase input must be accepted
         GameSession session = lobbySession(4);
         when(gameRepository.findByJoinCode("ABC123")).thenReturn(Optional.of(session));
         when(gameRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -238,7 +238,7 @@ class GameServiceTest {
         GameStateDTO result = gameService.startGame(session.getId(), session.getHostPlayerId());
         var mrX = result.getPlayers().stream()
                 .filter(p -> Role.MR_X.equals(p.getRole())).findFirst().orElseThrow();
-        assertThat(mrX.getTickets().get(TicketType.BLACK)).isEqualTo(2); // 2 detectives
+        assertThat(mrX.getTickets().get(TicketType.BLACK)).isEqualTo(2);
     }
 
     @Test
@@ -268,22 +268,29 @@ class GameServiceTest {
     }
 
     @Test
-    void startGame_notHost_throws() {
+    void startGame_notHost_throwsForbiddenException() {
         GameSession session = lobbySessionWithTwoPlayers();
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.startGame(session.getId(), "wrong-id"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("host");
     }
 
     @Test
-    void startGame_gameNotInLobby_throws() {
+    void startGame_gameNotInLobby_throwsConflictException() {
         GameSession session = lobbySessionWithTwoPlayers();
         session.setPhase(GamePhase.IN_PROGRESS);
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.startGame(session.getId(), session.getHostPlayerId()))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("lobby");
+    }
+
+    @Test
+    void startGame_gameNotFound_throwsGameNotFoundException() {
+        when(gameRepository.findById(any())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> gameService.startGame("no-such-game", "player-id"))
+                .isInstanceOf(GameNotFoundException.class);
     }
 
     @Test
@@ -339,7 +346,6 @@ class GameServiceTest {
 
     @Test
     void startGame_twoPlayers_mrXBlackTicketIsOne() {
-        // 2 players = 1 detective, so Mr X gets exactly 1 BLACK ticket
         GameSession session = lobbySessionWithTwoPlayers();
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         when(gameRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -413,18 +419,18 @@ class GameServiceTest {
     }
 
     @Test
-    void leaveGame_unknownPlayer_throws() {
+    void leaveGame_unknownPlayer_throwsGameNotFoundException() {
         GameSession session = lobbySession(4);
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.leaveGame(session.getId(), "no-such-id"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(GameNotFoundException.class);
     }
 
     @Test
-    void leaveGame_gameNotFound_throws() {
+    void leaveGame_gameNotFound_throwsGameNotFoundException() {
         when(gameRepository.findById(any())).thenReturn(Optional.empty());
         assertThatThrownBy(() -> gameService.leaveGame("no-such-game", "player-id"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(GameNotFoundException.class)
                 .hasMessageContaining("not found");
     }
 
@@ -513,17 +519,17 @@ class GameServiceTest {
     }
 
     @Test
-    void kickPlayer_notHost_throws() {
+    void kickPlayer_notHost_throwsForbiddenException() {
         GameSession session = lobbySession(4);
         session.getPlayers().add(new LobbyPlayer("joiner", "Bob"));
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.kickPlayer(session.getId(), "wrong-host", "joiner"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessageContaining("host");
     }
 
     @Test
-    void kickPlayer_selfKick_throws() {
+    void kickPlayer_selfKick_throwsIllegalArgumentException() {
         GameSession session = lobbySession(4);
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.kickPlayer(
@@ -533,24 +539,24 @@ class GameServiceTest {
     }
 
     @Test
-    void kickPlayer_duringInProgress_throws() {
+    void kickPlayer_duringInProgress_throwsConflictException() {
         GameSession session = inProgressSession();
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         String detectiveId = session.getPlayers().stream()
                 .filter(p -> p instanceof DetectivePlayer).findFirst().orElseThrow().getId();
         assertThatThrownBy(() -> gameService.kickPlayer(
                 session.getId(), session.getHostPlayerId(), detectiveId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("lobby");
     }
 
     @Test
-    void kickPlayer_unknownTarget_throws() {
+    void kickPlayer_unknownTarget_throwsGameNotFoundException() {
         GameSession session = lobbySession(4);
         when(gameRepository.findById(session.getId())).thenReturn(Optional.of(session));
         assertThatThrownBy(() -> gameService.kickPlayer(
                 session.getId(), session.getHostPlayerId(), "no-such-player"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(GameNotFoundException.class);
     }
 
     @Test

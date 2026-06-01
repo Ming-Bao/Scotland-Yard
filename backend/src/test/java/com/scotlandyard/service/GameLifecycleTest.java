@@ -1,6 +1,7 @@
 package com.scotlandyard.service;
 
 import com.scotlandyard.dto.GameStateDTO;
+import com.scotlandyard.exception.GameNotFoundException;
 import com.scotlandyard.model.*;
 import com.scotlandyard.repository.GameRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,7 +119,7 @@ class GameLifecycleTest {
         gameService.leaveGame(gameId, created.playerId());
 
         assertThatThrownBy(() -> gameService.getGame(gameId))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(GameNotFoundException.class)
                 .hasMessageContaining("not found");
     }
 

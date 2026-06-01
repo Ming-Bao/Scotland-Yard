@@ -2,6 +2,9 @@ package com.scotlandyard.controller;
 
 import tools.jackson.databind.ObjectMapper;
 import com.scotlandyard.dto.GameStateDTO;
+import com.scotlandyard.exception.ConflictException;
+import com.scotlandyard.exception.ForbiddenException;
+import com.scotlandyard.exception.GameNotFoundException;
 import com.scotlandyard.model.GamePhase;
 import com.scotlandyard.model.TurnPhase;
 import com.scotlandyard.service.GameService;
@@ -24,10 +27,6 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-/**
- * HTTP layer tests.
- * Verifies request routing, serialisation, and error response shape.
- */
 @SpringBootTest
 class GameControllerTest {
 
@@ -45,18 +44,18 @@ class GameControllerTest {
     }
 
     // -------------------------------------------------------------------------
-    // POST /api/games — create game
+    // POST /api/games/create — create game
     // -------------------------------------------------------------------------
 
     @Test
-    void createGame_validRequest_returns200WithPlayerIdAndGameState() throws Exception {
+    void createGame_validRequest_returns201WithPlayerIdAndGameState() throws Exception {
         var result = new GameService.CreateResult("player-1", lobbyState("game-1"));
         when(gameService.createGame(eq("Alice"), eq(4))).thenReturn(result);
 
-        mvc.perform(post("/api/games")
+        mvc.perform(post("/api/games/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("hostName", "Alice", "maxPlayers", 4))))
-                .andExpect(status().isOk())
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.playerId").value("player-1"))
                 .andExpect(jsonPath("$.gameState.phase").value("LOBBY"));
     }
@@ -64,13 +63,13 @@ class GameControllerTest {
     @Test
     void createGame_serviceThrows_returns400WithErrorField() throws Exception {
         when(gameService.createGame(any(), anyInt()))
-                .thenThrow(new IllegalArgumentException("Host name is required"));
+                .thenThrow(new IllegalArgumentException("Game not created"));
 
-        mvc.perform(post("/api/games")
+        mvc.perform(post("/api/games/create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("hostName", "", "maxPlayers", 4))))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Host name is required"));
+                .andExpect(jsonPath("$.error").value("Game not created"));
     }
 
     // -------------------------------------------------------------------------
@@ -90,13 +89,49 @@ class GameControllerTest {
     }
 
     @Test
-    void joinGame_invalidCode_returns400() throws Exception {
+    void joinGame_unknownCode_returns404() throws Exception {
         when(gameService.joinGame(any(), any()))
-                .thenThrow(new IllegalArgumentException("Game not found"));
+                .thenThrow(new GameNotFoundException("Game not found"));
 
         mvc.perform(post("/api/games/join")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("joinCode", "XXXXXX", "playerName", "Bob"))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Game not found"));
+    }
+
+    @Test
+    void joinGame_gameFull_returns409() throws Exception {
+        when(gameService.joinGame(any(), any()))
+                .thenThrow(new ConflictException("Game is full"));
+
+        mvc.perform(post("/api/games/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("joinCode", "ABC123", "playerName", "Bob"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("Game is full"));
+    }
+
+    @Test
+    void joinGame_wrongPhase_returns409() throws Exception {
+        when(gameService.joinGame(any(), any()))
+                .thenThrow(new ConflictException("Game is not in the lobby phase"));
+
+        mvc.perform(post("/api/games/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("joinCode", "ABC123", "playerName", "Bob"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").isNotEmpty());
+    }
+
+    @Test
+    void joinGame_blankName_returns400() throws Exception {
+        when(gameService.joinGame(any(), any()))
+                .thenThrow(new IllegalArgumentException("Player name is required"));
+
+        mvc.perform(post("/api/games/join")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("joinCode", "ABC123", "playerName", ""))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").isNotEmpty());
     }
@@ -116,13 +151,13 @@ class GameControllerTest {
     }
 
     @Test
-    void getGame_unknownId_returns400() throws Exception {
+    void getGame_unknownId_returns404() throws Exception {
         when(gameService.getGame("unknown"))
-                .thenThrow(new IllegalArgumentException("Game not found"));
+                .thenThrow(new GameNotFoundException("Game not found"));
 
         mvc.perform(get("/api/games/unknown"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").isNotEmpty());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Game not found"));
     }
 
     // -------------------------------------------------------------------------
@@ -141,75 +176,133 @@ class GameControllerTest {
     }
 
     @Test
-    void startGame_notHost_returns400() throws Exception {
+    void startGame_notHost_returns403() throws Exception {
         when(gameService.startGame(any(), any()))
-                .thenThrow(new IllegalArgumentException("Only the host can start the game"));
+                .thenThrow(new ForbiddenException("Only the host can start the game"));
 
         mvc.perform(post("/api/games/game-1/start")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json.writeValueAsString(Map.of("playerId", "wrong-id"))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Only the host can start the game"));
+    }
+
+    @Test
+    void startGame_gameNotFound_returns404() throws Exception {
+        when(gameService.startGame(any(), any()))
+                .thenThrow(new GameNotFoundException("Game not found"));
+
+        mvc.perform(post("/api/games/unknown/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("playerId", "player-1"))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Game not found"));
+    }
+
+    @Test
+    void startGame_wrongPhase_returns409() throws Exception {
+        when(gameService.startGame(any(), any()))
+                .thenThrow(new ConflictException("Game is not in the lobby phase"));
+
+        mvc.perform(post("/api/games/game-1/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("playerId", "player-1"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").isNotEmpty());
+    }
+
+    @Test
+    void startGame_notEnoughPlayers_returns400() throws Exception {
+        when(gameService.startGame(any(), any()))
+                .thenThrow(new IllegalArgumentException("Need at least 2 players to start"));
+
+        mvc.perform(post("/api/games/game-1/start")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("playerId", "player-1"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").isNotEmpty());
     }
 
     // -------------------------------------------------------------------------
-    // DELETE /api/games/{id}/players/{playerId} — leave game
+    // DELETE /api/games/{id}/players/{targetPlayerId} — leave game
     // -------------------------------------------------------------------------
 
     @Test
-    void leaveGame_validPlayer_returns200() throws Exception {
+    void leaveGame_validPlayer_returns204() throws Exception {
         doNothing().when(gameService).leaveGame("game-1", "player-1");
 
         mvc.perform(delete("/api/games/game-1/players/player-1"))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
-    void leaveGame_unknownPlayer_returns400() throws Exception {
-        doThrow(new IllegalArgumentException("Player not in game"))
+    void leaveGame_unknownPlayer_returns404() throws Exception {
+        doThrow(new GameNotFoundException("Player not in game"))
                 .when(gameService).leaveGame(any(), any());
 
         mvc.perform(delete("/api/games/game-1/players/unknown"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").isNotEmpty());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Player not in game"));
+    }
+
+    @Test
+    void leaveGame_gameNotFound_returns404() throws Exception {
+        doThrow(new GameNotFoundException("Game not found"))
+                .when(gameService).leaveGame(any(), any());
+
+        mvc.perform(delete("/api/games/unknown/players/player-1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Game not found"));
     }
 
     // -------------------------------------------------------------------------
-    // POST /api/games/{id}/players/{targetId}/kick — kick player
+    // DELETE /api/games/{id}/players/{targetPlayerId} — kick player (requesterId != targetPlayerId)
     // -------------------------------------------------------------------------
 
     @Test
-    void kickPlayer_validRequest_returns200() throws Exception {
+    void kickPlayer_validRequest_returns204() throws Exception {
         doNothing().when(gameService).kickPlayer("game-1", "host-id", "target-id");
 
-        mvc.perform(post("/api/games/game-1/players/target-id/kick")
+        mvc.perform(delete("/api/games/game-1/players/target-id")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("hostId", "host-id"))))
-                .andExpect(status().isOk());
+                        .content(json.writeValueAsString(Map.of("requesterId", "host-id"))))
+                .andExpect(status().isNoContent());
     }
 
     @Test
-    void kickPlayer_notHost_returns400() throws Exception {
-        doThrow(new IllegalArgumentException("Only the host can kick players"))
+    void kickPlayer_notHost_returns403() throws Exception {
+        doThrow(new ForbiddenException("Only the host can kick players"))
                 .when(gameService).kickPlayer(any(), any(), any());
 
-        mvc.perform(post("/api/games/game-1/players/target-id/kick")
+        mvc.perform(delete("/api/games/game-1/players/target-id")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("hostId", "wrong-id"))))
-                .andExpect(status().isBadRequest())
+                        .content(json.writeValueAsString(Map.of("requesterId", "wrong-id"))))
+                .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("Only the host can kick players"));
     }
 
     @Test
-    void kickPlayer_selfKick_returns400() throws Exception {
-        doThrow(new IllegalArgumentException("Host cannot kick themselves"))
+    void kickPlayer_wrongPhase_returns409() throws Exception {
+        doThrow(new ConflictException("Players can only be kicked during the lobby"))
                 .when(gameService).kickPlayer(any(), any(), any());
 
-        mvc.perform(post("/api/games/game-1/players/host-id/kick")
+        mvc.perform(delete("/api/games/game-1/players/target-id")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(json.writeValueAsString(Map.of("hostId", "host-id"))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Host cannot kick themselves"));
+                        .content(json.writeValueAsString(Map.of("requesterId", "host-id"))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").isNotEmpty());
+    }
+
+    @Test
+    void kickPlayer_playerNotFound_returns404() throws Exception {
+        doThrow(new GameNotFoundException("Game or player not found"))
+                .when(gameService).kickPlayer(any(), any(), any());
+
+        mvc.perform(delete("/api/games/game-1/players/no-such-player")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("requesterId", "host-id"))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Game or player not found"));
     }
 
     // -------------------------------------------------------------------------
