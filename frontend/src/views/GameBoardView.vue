@@ -58,13 +58,13 @@ const store = useGameStore()
 // --- Demo graph (Sprint 2 — replaced by real data in Sprint 3) ---
 
 const nodes: GraphNode[] = [
-  { id: 1, x: 120, y: 180, label: 'Lambton Quay' },
-  { id: 2, x: 280, y: 110, label: 'Wellington Station' },
-  { id: 3, x: 440, y: 150, label: 'Thorndon' },
-  { id: 4, x: 420, y: 300, label: 'Mt Victoria' },
-  { id: 5, x: 260, y: 340, label: 'Courtenay Pl' },
-  { id: 6, x: 130, y: 320, label: 'Newtown' },
-  { id: 7, x: 310, y: 220, label: 'Te Aro' },
+  { id: 1, lat: -41.2886, lng: 174.7759, label: 'Lambton Quay' },
+  { id: 2, lat: -41.2787, lng: 174.7798, label: 'Wellington Station' },
+  { id: 3, lat: -41.2740, lng: 174.7770, label: 'Thorndon' },
+  { id: 4, lat: -41.2960, lng: 174.7960, label: 'Mt Victoria' },
+  { id: 5, lat: -41.2950, lng: 174.7790, label: 'Courtenay Pl' },
+  { id: 6, lat: -41.3060, lng: 174.7810, label: 'Newtown' },
+  { id: 7, lat: -41.2940, lng: 174.7760, label: 'Te Aro' },
 ]
 
 const edges: GraphEdge[] = [

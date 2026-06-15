@@ -2,253 +2,257 @@
 
 ## High-Level Overview
 
-```mermaid
-classDiagram
-    class GameController {
-        <<REST Controller>>
-    }
+```plantuml
+@startuml
 
-    class GameService {
-        <<Service>>
-    }
+skinparam classAttributeIconSize 0
 
-    class GameRepository {
-        <<Repository>>
-    }
+class GameController <<Controller>>
+class GameService <<Service>>
+class GameRepository <<Repository>>
+class GameSession <<Entity>>
+interface Player
+class LobbyPlayer
+class MrXPlayer
+class DetectivePlayer
 
-    class GameSession {
-        <<Domain Model>>
-        phase : GamePhase
-        round : int
-    }
+GameController --> GameService : delegates
+GameService  --> GameRepository : reads / writes
+GameRepository "1" --> "0..*" GameSession : stores
+GameSession "1" *-- "0..*" Player : players
 
-    class Player {
-        <<interface>>
-    }
+Player <|-- LobbyPlayer
+Player <|-- MrXPlayer
+Player <|-- DetectivePlayer
 
-    class LobbyPlayer {
-        role = null
-        tickets = null
-    }
-
-    class MrXPlayer {
-        role = MR_X
-        transport = unlimited
-    }
-
-    class DetectivePlayer {
-        role = DETECTIVE
-        transport = finite
-    }
-
-    GameController --> GameService : delegates to
-    GameService --> GameRepository : reads / writes
-    GameRepository --> GameSession : stores
-    GameSession "1" *-- "0..*" Player : players
-    LobbyPlayer ..|> Player
-    MrXPlayer ..|> Player
-    DetectivePlayer ..|> Player
+@enduml
 ```
 
 ## Detailed Diagram
 
-```mermaid
-classDiagram
-    %% ── Enums ──────────────────────────────────────────────────────────────
+```plantuml
+@startuml
 
-    class GamePhase {
-        <<enumeration>>
-        LOBBY
-        IN_PROGRESS
-        PAUSED
-        ENDED
-    }
+skinparam classAttributeIconSize 0
 
-    class TurnPhase {
-        <<enumeration>>
-        MR_X_TURN
-        DETECTIVE_TURN
-    }
+' ── Enumerations ──────────────────────────────────────────────────────
 
-    class Role {
-        <<enumeration>>
-        MR_X
-        DETECTIVE
-    }
+enum GamePhase {
+    LOBBY
+    IN_PROGRESS
+    PAUSED
+    ENDED
+}
 
-    class TicketType {
-        <<enumeration>>
-        ESCOOTER
-        BUS
-        TRAIN
-        FERRY
-        BLACK
-        DOUBLE
-    }
+enum TurnPhase {
+    MR_X_TURN
+    DETECTIVE_TURN
+}
 
-    %% ── Player hierarchy ───────────────────────────────────────────────────
+enum Role {
+    MR_X
+    DETECTIVE
+}
 
-    class Player {
-        <<interface>>
-        +getId() String
-        +getName() String
-        +getRole() Role
-        +getNodeId() Integer
-        +setNodeId(Integer)
-        +getTickets() Map~TicketType, Integer~
-        +getTicket(TicketType) Integer
-        +useTicket(TicketType)
-    }
+enum TicketType {
+    ESCOOTER
+    BUS
+    TRAIN
+    FERRY
+    BLACK
+    DOUBLE
+}
 
-    class LobbyPlayer {
-        -String id
-        -String name
-        -Integer nodeId
-        +LobbyPlayer(String id, String name)
-        +getRole() Role
-        +getTickets() Map~TicketType, Integer~
-        +getTicket(TicketType) Integer
-        +useTicket(TicketType)
-    }
+' ── Player hierarchy ──────────────────────────────────────────────────
 
-    class MrXPlayer {
-        -String id
-        -String name
-        -Integer nodeId
-        -Map~TicketType, Integer~ tickets
-        +MrXPlayer(String id, String name, int detectiveCount)
-        +getRole() Role
-        +getTickets() Map~TicketType, Integer~
-        +getTicket(TicketType) Integer
-        +useTicket(TicketType)
-    }
+interface Player {
+    + getId() : String
+    + getName() : String
+    + getRole() : Role
+    + getNodeId() : Integer
+    + setNodeId(nodeId : Integer) : void
+    + getTickets() : Map<TicketType, Integer>
+    + getTicket(type : TicketType) : Integer
+    + useTicket(type : TicketType) : void
+}
 
-    class DetectivePlayer {
-        -String id
-        -String name
-        -Integer nodeId
-        -Map~TicketType, Integer~ tickets
-        +DetectivePlayer(String id, String name, int escooter, int bus, int train, int ferry)
-        +getRole() Role
-        +getTickets() Map~TicketType, Integer~
-        +getTicket(TicketType) Integer
-        +useTicket(TicketType)
-    }
+class LobbyPlayer {
+    - id : String
+    - name : String
+    - nodeId : Integer
+    --
+    + LobbyPlayer(id : String, name : String)
+    + getRole() : Role
+    + getTickets() : Map<TicketType, Integer>
+    + getTicket(type : TicketType) : Integer
+    + useTicket(type : TicketType) : void
+}
 
-    LobbyPlayer  ..|> Player
-    MrXPlayer    ..|> Player
-    DetectivePlayer ..|> Player
+class MrXPlayer {
+    - id : String
+    - name : String
+    - nodeId : Integer
+    - tickets : Map<TicketType, Integer>
+    --
+    + MrXPlayer(id : String, name : String, detectiveCount : int)
+    + getRole() : Role
+    + getTickets() : Map<TicketType, Integer>
+    + getTicket(type : TicketType) : Integer
+    + useTicket(type : TicketType) : void
+}
 
-    %% ── Domain model ───────────────────────────────────────────────────────
+class DetectivePlayer {
+    - id : String
+    - name : String
+    - nodeId : Integer
+    - tickets : Map<TicketType, Integer>
+    --
+    + DetectivePlayer(id : String, name : String, escooter : int, bus : int, train : int, ferry : int)
+    + getRole() : Role
+    + getTickets() : Map<TicketType, Integer>
+    + getTicket(type : TicketType) : Integer
+    + useTicket(type : TicketType) : void
+}
 
-    class GameSession {
-        -String id
-        -String joinCode
-        -GamePhase phase
-        -int maxPlayers
-        -String hostPlayerId
-        -List~Player~ players
-        -int round
-        -TurnPhase turnPhase
-        -String currentPlayerId
-        -String winner
-        -String abortReason
-    }
+Player <|-- LobbyPlayer
+Player <|-- MrXPlayer
+Player <|-- DetectivePlayer
+Player ..> Role
+Player ..> TicketType
 
-    GameSession "1" *-- "0..*" Player : players
-    GameSession --> GamePhase
-    GameSession --> TurnPhase
+' ── Domain model ──────────────────────────────────────────────────────
 
-    %% ── DTOs ───────────────────────────────────────────────────────────────
+class GameSession {
+    - id : String
+    - joinCode : String
+    - phase : GamePhase
+    - maxPlayers : int
+    - hostPlayerId : String
+    - players : List<Player>
+    - round : int
+    - turnPhase : TurnPhase
+    - currentPlayerId : String
+    - winner : String
+    - abortReason : String
+}
 
-    class GameStateDTO {
-        -String gameId
-        -String joinCode
-        -GamePhase phase
-        -int maxPlayers
-        -int round
-        -TurnPhase turnPhase
-        -String currentPlayerId
-        -String winner
-        -String abortReason
-        -List~PlayerDTO~ players
-    }
+GameSession "1" *-- "0..*" Player : players
+GameSession ..> GamePhase
+GameSession ..> TurnPhase
 
-    class PlayerDTO {
-        -String id
-        -String name
-        -Role role
-        -Integer nodeId
-        -Map~TicketType, Integer~ tickets
-    }
+' ── DTOs ──────────────────────────────────────────────────────────────
 
-    class CreateGameRequest {
-        -String hostName
-        -int maxPlayers
-    }
+class GameStateDTO {
+    - gameId : String
+    - joinCode : String
+    - phase : GamePhase
+    - maxPlayers : int
+    - round : int
+    - turnPhase : TurnPhase
+    - currentPlayerId : String
+    - winner : String
+    - abortReason : String
+    - players : List<PlayerDTO>
+}
 
-    class JoinGameRequest {
-        -String joinCode
-        -String playerName
-    }
+class PlayerDTO {
+    - id : String
+    - name : String
+    - role : Role
+    - nodeId : Integer
+    - tickets : Map<TicketType, Integer>
+}
 
-    class StartGameRequest {
-        -String playerId
-    }
+class CreateGameRequest {
+    - hostName : String
+    - maxPlayers : int
+}
 
-    class KickPlayerRequest {
-        -String hostId
-    }
+class JoinGameRequest {
+    - joinCode : String
+    - playerName : String
+}
 
-    GameStateDTO "1" *-- "0..*" PlayerDTO : players
+class StartGameRequest {
+    - playerId : String
+}
 
-    %% ── Repository ─────────────────────────────────────────────────────────
+class RemovePlayerRequest {
+    - requesterId : String
+}
 
-    class GameRepository {
-        -ConcurrentHashMap~String, GameSession~ store
-        +save(GameSession) GameSession
-        +findById(String) Optional~GameSession~
-        +findByJoinCode(String) Optional~GameSession~
-        +delete(String)
-    }
+class CreateResult <<record>> {
+    - playerId : String
+    - gameState : GameStateDTO
+}
 
-    GameRepository --> GameSession
+class JoinResult <<record>> {
+    - playerId : String
+    - gameState : GameStateDTO
+}
 
-    %% ── Service ─────────────────────────────────────────────────────────────
+GameStateDTO "1" *-- "0..*" PlayerDTO : players
+GameStateDTO ..> GamePhase
+GameStateDTO ..> TurnPhase
+PlayerDTO ..> Role
+PlayerDTO ..> TicketType
+CreateResult --> GameStateDTO
+JoinResult  --> GameStateDTO
 
-    class GameService {
-        -int escooterTickets
-        -int busTickets
-        -int trainTickets
-        -int ferryTickets
-        +createGame(String hostName, int maxPlayers) CreateResult
-        +joinGame(String joinCode, String playerName) JoinResult
-        +getGame(String gameId) GameStateDTO
-        +startGame(String gameId, String playerId) GameStateDTO
-        +leaveGame(String gameId, String playerId)
-        +kickPlayer(String gameId, String hostId, String targetPlayerId)
-    }
+' ── Repository ────────────────────────────────────────────────────────
 
-    GameService --> GameRepository
-    GameService --> GameStateDTO
-    GameService --> LobbyPlayer
-    GameService --> MrXPlayer
-    GameService --> DetectivePlayer
+class GameRepository <<Repository>> {
+    - store : ConcurrentHashMap<String, GameSession>
+    --
+    + save(session : GameSession) : GameSession
+    + findById(id : String) : Optional<GameSession>
+    + findByJoinCode(code : String) : Optional<GameSession>
+    + delete(id : String) : void
+}
 
-    %% ── Controller ─────────────────────────────────────────────────────────
+GameRepository "1" --> "0..*" GameSession : stores
 
-    class GameController {
-        +POST /api/games createGame(CreateGameRequest)
-        +POST /api/games/join joinGame(JoinGameRequest)
-        +GET /api/games/:id getGame(String id)
-        +POST /api/games/:id/start startGame(String id, StartGameRequest)
-        +DELETE /api/games/:id/players/:playerId leaveGame(String id, String playerId)
-        +POST /api/games/:id/players/:targetId/kick kickPlayer(String id, String targetId, KickPlayerRequest)
-    }
+' ── Service ───────────────────────────────────────────────────────────
 
-    GameController --> GameService
-    GameController ..> CreateGameRequest
-    GameController ..> JoinGameRequest
-    GameController ..> StartGameRequest
-    GameController ..> KickPlayerRequest
+class GameService <<Service>> {
+    - escooterTickets : int
+    - busTickets : int
+    - trainTickets : int
+    - ferryTickets : int
+    --
+    + createGame(hostName : String, maxPlayers : int) : CreateResult
+    + joinGame(joinCode : String, playerName : String) : JoinResult
+    + getGame(gameId : String) : GameStateDTO
+    + startGame(gameId : String, playerId : String) : GameStateDTO
+    + leaveGame(gameId : String, playerId : String) : void
+    + kickPlayer(gameId : String, hostId : String, targetPlayerId : String) : void
+}
+
+GameService --> GameRepository : uses
+GameService ..> GameStateDTO : creates
+GameService ..> CreateResult : creates
+GameService ..> JoinResult : creates
+GameService ..> LobbyPlayer : instantiates
+GameService ..> MrXPlayer : instantiates
+GameService ..> DetectivePlayer : instantiates
+
+' ── Controller ────────────────────────────────────────────────────────
+
+class GameController <<Controller>> {
+    - gameService : GameService
+    --
+    + createGame(req : CreateGameRequest) : ResponseEntity
+    + joinGame(req : JoinGameRequest) : ResponseEntity
+    + getGame(id : String) : ResponseEntity
+    + startGame(id : String, req : StartGameRequest) : ResponseEntity
+    + removePlayer(id : String, targetPlayerId : String, req : RemovePlayerRequest) : ResponseEntity
+}
+
+GameController --> GameService : delegates
+GameController ..> CreateGameRequest : uses
+GameController ..> JoinGameRequest : uses
+GameController ..> StartGameRequest : uses
+GameController ..> RemovePlayerRequest : uses
+
+@enduml
 ```
