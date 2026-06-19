@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scotland Yard — Map Creator</title>
+  <link href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" rel="stylesheet">
+  <link href="map-creator.css" rel="stylesheet">
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+</head>
+<body>
+
+<!-- ════════════════ TOOLBAR ════════════════ -->
+<div id="toolbar">
+  <div class="tb-group">
+    <button id="btn-load-map">Load Map</button>
+    <button id="btn-save-map" disabled>Save Map</button>
+    <button id="btn-auto-gen" disabled>Auto-Generate</button>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <div class="tb-group">
+    <span class="tb-label">Edge modes:</span>
+    <button class="mode-btn active" data-mode="ESCOOTER" title="Escooter">E</button>
+    <button class="mode-btn active" data-mode="BUS"      title="Bus">B</button>
+    <button class="mode-btn"        data-mode="TRAIN"    title="Train">T</button>
+    <button class="mode-btn"        data-mode="FERRY"    title="Ferry">F</button>
+  </div>
+
+  <div class="tb-sep"></div>
+
+  <div class="tb-group">
+    <span class="tb-count">Nodes: <b id="node-count">0</b></span>
+    <span class="tb-count">Edges: <b id="edge-count">0</b></span>
+  </div>
+
+  <span id="status">Load road GeoJSON to begin</span>
+</div>
+
+<!-- ════════════════ MAP ════════════════ -->
+<div id="map-wrap">
+  <div id="map"></div>
+
+  <!-- Edge mode editor — visible when an edge is selected -->
+  <div id="edge-panel">
+    <span id="ep-label"></span>
+    <div class="tb-sep"></div>
+    <span class="tb-label">Modes:</span>
+    <button class="ep-mode-btn mode-btn" data-mode="ESCOOTER" title="Escooter">E</button>
+    <button class="ep-mode-btn mode-btn" data-mode="BUS"      title="Bus">B</button>
+    <button class="ep-mode-btn mode-btn" data-mode="TRAIN"    title="Train">T</button>
+    <button class="ep-mode-btn mode-btn" data-mode="FERRY"    title="Ferry">F</button>
+    <div class="tb-sep"></div>
+    <button id="ep-delete">Delete edge</button>
+    <button id="ep-close">Done</button>
+  </div>
+
+  <div id="hud">
+    <b>Click road</b> — add node<br>
+    <b>Click node</b> — rename<br>
+    <b>Drag node → node</b> — add edge<br>
+    <b>Right-click node</b> — delete<br>
+    <b>Right-click edge</b> — edit modes
+  </div>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="file-map" accept=".geojson,.json" style="display:none">
+
+<script src="wellington-data.js"></script>
+<script src="map-creator.js"></script>
+</body>
+</html>

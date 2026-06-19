@@ -66,7 +66,7 @@ function edgeGeoJSON() {
         properties: { primaryMode: e.modes[0] },
         geometry: {
           type: 'LineString' as const,
-          coordinates: [[from.lng, from.lat], [to.lng, to.lat]],
+          coordinates: e.coordinates ?? [[from.lng, from.lat], [to.lng, to.lat]],
         },
       }]
     }),
