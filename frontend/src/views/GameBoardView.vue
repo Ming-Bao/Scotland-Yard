@@ -15,6 +15,9 @@
       </div>
     </div>
 
+    <!-- Map load error -->
+    <div v-if="mapError" class="map-error">{{ mapError }}</div>
+
     <!-- Body -->
     <div class="body">
       <GameMap
@@ -42,11 +45,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from 'lucide-vue-next'
 import { useGameStore } from '../stores/gameStore'
-import { leaveGame } from '../api/gameApi'
+import { leaveGame, getMap } from '../api/gameApi'
 import type { GraphNode, GraphEdge, MrXLogEntry } from '../types/game'
 import { MODE_COLORS } from '../utils/transportModes'
 import GameMap from '../components/game/GameMap.vue'
@@ -55,34 +58,26 @@ import InfoPanel from '../components/game/InfoPanel.vue'
 const router = useRouter()
 const store = useGameStore()
 
-// --- Demo graph (Sprint 2 — replaced by real data in Sprint 3) ---
+// --- Map data ---
 
-const nodes: GraphNode[] = [
-  { id: 1, lat: -41.2886, lng: 174.7759, label: 'Lambton Quay' },
-  { id: 2, lat: -41.2787, lng: 174.7798, label: 'Wellington Station' },
-  { id: 3, lat: -41.2740, lng: 174.7770, label: 'Thorndon' },
-  { id: 4, lat: -41.2960, lng: 174.7960, label: 'Mt Victoria' },
-  { id: 5, lat: -41.2950, lng: 174.7790, label: 'Courtenay Pl' },
-  { id: 6, lat: -41.3060, lng: 174.7810, label: 'Newtown' },
-  { id: 7, lat: -41.2940, lng: 174.7760, label: 'Te Aro' },
-]
+const nodes = ref<GraphNode[]>([])
+const edges = ref<GraphEdge[]>([])
+const mapError = ref<string | null>(null)
 
-const edges: GraphEdge[] = [
-  { from: 1, to: 2, modes: ['TRAIN', 'BUS'] },
-  { from: 2, to: 3, modes: ['TRAIN'] },
-  { from: 3, to: 4, modes: ['BUS', 'ESCOOTER'] },
-  { from: 4, to: 5, modes: ['ESCOOTER'] },
-  { from: 5, to: 6, modes: ['BUS'] },
-  { from: 6, to: 1, modes: ['ESCOOTER', 'FERRY'] },
-  { from: 1, to: 7, modes: ['BUS'] },
-  { from: 7, to: 5, modes: ['BUS', 'ESCOOTER'] },
-  { from: 2, to: 7, modes: ['ESCOOTER'] },
-  { from: 7, to: 4, modes: ['BUS'] },
-]
+onMounted(async () => {
+  try {
+    const map = await getMap()
+    nodes.value = map.nodes
+    edges.value = map.edges
+    if (map.nodes.length > 0) playerNode.value = map.nodes[0].id
+  } catch (e) {
+    mapError.value = e instanceof Error ? e.message : 'Failed to load map'
+  }
+})
 
 // --- Player state ---
 
-const playerNode = ref(1)
+const playerNode = ref(0)
 const selectedNode = ref<GraphNode | null>(null)
 const selectedTicket = ref<string | null>(null)
 
@@ -102,7 +97,7 @@ const mrXLog: MrXLogEntry[] = []
 
 function edgeTo(targetId: number | undefined): GraphEdge | undefined {
   if (targetId == null) return undefined
-  return edges.find(e =>
+  return edges.value.find(e =>
     (e.from === playerNode.value && e.to === targetId) ||
     (e.to === playerNode.value && e.from === targetId)
   )
@@ -171,5 +166,8 @@ async function handleLeave() {
 }
 .body {
   @apply flex flex-1 overflow-hidden;
+}
+.map-error {
+  @apply bg-red-900/20 border-b border-red-700 text-red-400 text-sm px-4 py-2;
 }
 </style>

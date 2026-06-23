@@ -765,8 +765,8 @@ async function autoGenerate() {
   }
 
   // ── 2. Minimum-distance sampling (~300 m apart) ───────────
-  const MIN_DIST = 0.003;
-  const TARGET   = 160;
+  const MIN_DIST = 0.0025;
+  const TARGET   = 200;
   const selected = [];
   for (const c of candidates) {
     if (selected.length >= TARGET) break;
@@ -785,82 +785,68 @@ async function autoGenerate() {
   setStatus(`Placed ${nodes.length} nodes — routing edges…`);
   await new Promise(r => setTimeout(r, 0));
 
-  // ── 4. All pairs sorted by distance ──────────────────────
+  // ── 4. Per-node nearest-neighbour lists (within MAX_EDGE_DEG) ─
   const MAX_DEGREE   = 4;
-  const MAX_FILL_DEG = 0.012; // ~1.2 km cap for phase 2
+  const MAX_EDGE_DEG = 0.025; // ~2.5 km Euclidean cap for candidate pairs
 
-  const allPairs = [];
+  // Build sorted neighbour list for each node cheaply by scanning pairs once
+  const nbrs = Array.from({ length: nodes.length }, () => []); // nbrs[i] = [{j, d}] sorted asc
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const d = Math.hypot(nodes[i].lng - nodes[j].lng, nodes[i].lat - nodes[j].lat);
-      allPairs.push({ i, j, d });
+      if (d <= MAX_EDGE_DEG) { nbrs[i].push({ j, d }); nbrs[j].push({ i: j, j: i, d }); }
     }
   }
-  allPairs.sort((a, b) => a.d - b.d);
+  for (const list of nbrs) list.sort((a, b) => a.d - b.d);
 
-  // ── 5. Edge builder — returns false if no road path found ─
+  // ── 5. Edge builder — returns false if no road path or path too long ─
+  const MAX_EDGE_M = 1500; // road path must be ≤ 1500 m
   const degree = new Array(nodes.length).fill(0);
-  const added  = new Set(); // "i-j" (i < j)
+  const added  = new Set();
 
-  function commitEdge(i, j, preCoords) {
-    const key = `${i}-${j}`;
+  function pathLengthM(coords) {
+    let total = 0;
+    for (let k = 1; k < coords.length; k++) total += haversine(coords[k - 1], coords[k]);
+    return total;
+  }
+
+  function commitEdge(i, j) {
+    const a = Math.min(i, j), b = Math.max(i, j);
+    const key = `${a}-${b}`;
     if (added.has(key)) return true;
-    const ni = nodes[i], nj = nodes[j];
-    let coords = preCoords;
-    if (!coords) {
-      const dm = haversine([ni.lng, ni.lat], [nj.lng, nj.lat]);
-      coords = findRoadPath(ni, nj, Math.min(dm * 5, 8000));
-      if (coords.length === 2) return false; // straight-line fallback — skip
-    }
-    edges.push({ id: nextEdgeId++, from: ni.id, to: nj.id, modes: ['ESCOOTER'], coordinates: coords });
-    degree[i]++;
-    degree[j]++;
+    const na = nodes[a], nb = nodes[b];
+    const dm = haversine([na.lng, na.lat], [nb.lng, nb.lat]);
+    const coords = findRoadPath(na, nb, Math.min(dm * 5, MAX_EDGE_M * 1.5));
+    if (coords.length === 2) return false;          // no road path
+    if (pathLengthM(coords) > MAX_EDGE_M) return false; // road path too long
+    edges.push({ id: nextEdgeId++, from: na.id, to: nb.id, modes: ['ESCOOTER'], coordinates: coords });
+    degree[a]++; degree[b]++;
     added.add(key);
     return true;
   }
 
-  // ── 6. Phase 1: Kruskal's spanning tree (road-only edges) ─
-  const parent = Array.from({ length: nodes.length }, (_, i) => i);
-  function find(x) {
-    while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
-    return x;
-  }
-  function unionNodes(x, y) {
-    const rx = find(x), ry = find(y);
-    if (rx === ry) return false;
-    parent[rx] = ry;
-    return true;
-  }
-
-  let remaining = nodes.length, done = 0;
-  for (const { i, j } of allPairs) {
-    if (remaining <= 1) break;
-    if (find(i) === find(j)) continue; // already same component
-    const ni = nodes[i], nj = nodes[j];
-    const dm = haversine([ni.lng, ni.lat], [nj.lng, nj.lat]);
-    const coords = findRoadPath(ni, nj, Math.min(dm * 5, 8000));
-    if (coords.length === 2) continue; // no road path — try next pair
-    unionNodes(i, j);
-    commitEdge(i, j, coords);
-    remaining--;
+  // ── 6. Connect each node to its nearest road-reachable neighbours ─
+  let done = 0;
+  for (let idx = 0; idx < nodes.length; idx++) {
+    for (const { j } of nbrs[idx]) {
+      if (degree[idx] >= MAX_DEGREE) break;       // this node is full
+      if (degree[j]   >= MAX_DEGREE) continue;    // neighbour is full, try next
+      commitEdge(idx, j);
+    }
     if (++done % 10 === 0) {
       updateCounts(); refreshSources();
-      setStatus(`Spanning tree… ${edges.length} edges`);
+      setStatus(`Connecting nodes… ${edges.length} edges`);
       await new Promise(r => setTimeout(r, 0));
     }
   }
 
-  // ── 7. Phase 2: fill to MAX_DEGREE with short-range edges ─
-  done = 0;
-  for (const { i, j, d } of allPairs) {
-    if (d >= MAX_FILL_DEG) break; // sorted, so first long pair ends this
-    if (degree[i] >= MAX_DEGREE || degree[j] >= MAX_DEGREE) continue;
-    commitEdge(i, j); // no-op if already in spanning tree
-    if (++done % 20 === 0) {
-      updateCounts(); refreshSources();
-      setStatus(`Filling connections… ${edges.length} edges`);
-      await new Promise(r => setTimeout(r, 0));
-    }
+  // ── 7. Remove nodes that got no connections at all ────────
+  const isolatedIds = new Set(
+    nodes.filter((_, i) => degree[i] === 0).map(n => n.id)
+  );
+  if (isolatedIds.size > 0) {
+    nodes = nodes.filter(n => !isolatedIds.has(n.id));
+    setStatus(`Removed ${isolatedIds.size} isolated nodes — ${nodes.length} nodes, ${edges.length} edges`);
   }
 
   refreshSources();

@@ -1,8 +1,8 @@
 export type TicketType = 'ESCOOTER' | 'BUS' | 'TRAIN' | 'FERRY' | 'BLACK' | 'DOUBLE'
 
-// Graph / demo types (Sprint 2 — replaced by real game state in Sprint 3)
 export interface GraphNode { id: number; lat: number; lng: number; label: string }
 export interface GraphEdge { from: number; to: number; modes: string[]; coordinates?: [number, number][] }
+export interface MapData { nodes: GraphNode[]; edges: GraphEdge[] }
 export interface DemoPlayer { name: string; isYou: boolean; role: string; node: number | null; color: string }
 export interface DemoTicket { type: string; label: string; count: number; color: string }
 export interface MrXLogEntry { round: number; ticket: string; node: number | null }

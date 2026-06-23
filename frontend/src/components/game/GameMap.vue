@@ -29,46 +29,123 @@ const emit = defineEmits<{ 'select-node': [node: GraphNode | null] }>()
 const mapContainer = ref<HTMLDivElement>()
 let map: maplibregl.Map | null = null
 
-function isReachable(nodeId: number): boolean {
-  if (nodeId === props.playerNode) return false
-  return props.edges.some(
-    e => (e.from === props.playerNode && e.to === nodeId) ||
-         (e.to   === props.playerNode && e.from === nodeId)
-  )
+// ── Pie chart icon helpers ────────────────────────────────────────────────────
+
+const MODE_ORDER = ['ESCOOTER', 'BUS', 'TRAIN', 'FERRY']
+const ABBREV: Record<string, string> = { ESCOOTER: 'E', BUS: 'B', TRAIN: 'T', FERRY: 'F' }
+
+function modesKey(modes: Set<string>): string {
+  const key = MODE_ORDER.filter(m => modes.has(m)).map(m => ABBREV[m]).join('')
+  return key || 'none'
+}
+
+function makePieIcon(modes: string[], isPlayer = false, isSelected = false): ImageData {
+  const SIZE = 40
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = SIZE
+  const ctx = canvas.getContext('2d')!
+  const cx = SIZE / 2
+  const r  = SIZE / 2 - 2
+
+  if (modes.length === 0) {
+    ctx.beginPath()
+    ctx.arc(cx, cx, r, 0, Math.PI * 2)
+    ctx.fillStyle = isPlayer ? '#2563eb' : '#1f2937'
+    ctx.fill()
+  } else {
+    const step = (Math.PI * 2) / modes.length
+    let angle = -Math.PI / 2
+    for (const mode of modes) {
+      ctx.beginPath()
+      ctx.moveTo(cx, cx)
+      ctx.arc(cx, cx, r, angle, angle + step)
+      ctx.closePath()
+      ctx.fillStyle = MODE_COLORS[mode] ?? '#6b7280'
+      ctx.fill()
+      angle += step
+    }
+  }
+
+  // Outer ring — blue for player, white for selected, dark otherwise
+  ctx.beginPath()
+  ctx.arc(cx, cx, r, 0, Math.PI * 2)
+  ctx.strokeStyle = isPlayer ? '#60a5fa' : isSelected ? '#ffffff' : '#111827'
+  ctx.lineWidth = isPlayer || isSelected ? 3 : 2
+  ctx.stroke()
+
+  return ctx.getImageData(0, 0, SIZE, SIZE)
+}
+
+function registerIcons() {
+  if (!map) return
+  // All 16 mode combinations × 3 states (normal / player / selected)
+  for (let mask = 0; mask < 16; mask++) {
+    const modes = MODE_ORDER.filter((_, i) => mask & (1 << i))
+    const key   = modesKey(new Set(modes))
+    map.addImage(`node-${key}`,          makePieIcon(modes))
+    map.addImage(`node-${key}-player`,   makePieIcon(modes, true,  false))
+    map.addImage(`node-${key}-selected`, makePieIcon(modes, false, true))
+  }
+}
+
+// ── GeoJSON builders ──────────────────────────────────────────────────────────
+
+function nodeModeMap(): Map<number, Set<string>> {
+  const m = new Map<number, Set<string>>()
+  for (const e of props.edges) {
+    for (const mode of e.modes) {
+      if (!m.has(e.from)) m.set(e.from, new Set())
+      if (!m.has(e.to))   m.set(e.to,   new Set())
+      m.get(e.from)!.add(mode)
+      m.get(e.to)!.add(mode)
+    }
+  }
+  return m
 }
 
 function nodeGeoJSON() {
+  const modeMap = nodeModeMap()
   return {
     type: 'FeatureCollection' as const,
-    features: props.nodes.map(n => ({
-      type: 'Feature' as const,
-      properties: {
-        id: n.id,
-        label: n.label,
-        isPlayer:   n.id === props.playerNode,
-        isSelected: n.id === props.selectedNode?.id,
-        isReachable: isReachable(n.id),
-      },
-      geometry: { type: 'Point' as const, coordinates: [n.lng, n.lat] },
-    })),
+    features: props.nodes.map(n => {
+      const modes = modeMap.get(n.id) ?? new Set<string>()
+      const key   = modesKey(modes)
+      const isPlayer   = n.id === props.playerNode
+      const isSelected = n.id === props.selectedNode?.id
+      const isReachable = !isPlayer && props.edges.some(
+        e => (e.from === props.playerNode && e.to === n.id) ||
+             (e.to   === props.playerNode && e.from === n.id)
+      )
+      const iconKey = isPlayer ? `node-${key}-player`
+                    : isSelected ? `node-${key}-selected`
+                    : `node-${key}`
+      return {
+        type: 'Feature' as const,
+        properties: { id: n.id, label: n.label, isReachable, iconKey },
+        geometry: { type: 'Point' as const, coordinates: [n.lng, n.lat] },
+      }
+    }),
   }
 }
 
 function edgeGeoJSON() {
+  const SPACING = 4.5
   return {
     type: 'FeatureCollection' as const,
     features: props.edges.flatMap(e => {
       const from = props.nodes.find(n => n.id === e.from)
       const to   = props.nodes.find(n => n.id === e.to)
       if (!from || !to) return []
-      return [{
+      const modes = e.modes.length ? e.modes : ['BUS']
+      const coords = e.coordinates ?? [[from.lng, from.lat], [to.lng, to.lat]]
+      return modes.map((mode, i) => ({
         type: 'Feature' as const,
-        properties: { primaryMode: e.modes[0] },
-        geometry: {
-          type: 'LineString' as const,
-          coordinates: e.coordinates ?? [[from.lng, from.lat], [to.lng, to.lat]],
+        properties: {
+          mode,
+          lineOffset: modes.length === 1 ? 0 : (i - (modes.length - 1) / 2) * SPACING,
         },
-      }]
+        geometry: { type: 'LineString' as const, coordinates: coords },
+      }))
     }),
   }
 }
@@ -78,6 +155,8 @@ function updateSources() {
   ;(map.getSource('nodes') as maplibregl.GeoJSONSource | undefined)?.setData(nodeGeoJSON() as any)
   ;(map.getSource('edges') as maplibregl.GeoJSONSource | undefined)?.setData(edgeGeoJSON() as any)
 }
+
+// ── Map setup ─────────────────────────────────────────────────────────────────
 
 onMounted(() => {
   map = new maplibregl.Map({
@@ -93,16 +172,18 @@ onMounted(() => {
   map.on('load', () => {
     if (!map) return
 
+    registerIcons()
+
     map.addSource('edges', { type: 'geojson', data: edgeGeoJSON() as any })
     map.addSource('nodes', { type: 'geojson', data: nodeGeoJSON() as any })
 
-    // Edges coloured by primary transport mode
+    // Parallel coloured lines — one feature per mode per edge
     map.addLayer({
       id: 'edges',
       type: 'line',
       source: 'edges',
       paint: {
-        'line-color': ['match', ['get', 'primaryMode'],
+        'line-color': ['match', ['get', 'mode'],
           'ESCOOTER', MODE_COLORS.ESCOOTER,
           'BUS',      MODE_COLORS.BUS,
           'TRAIN',    MODE_COLORS.TRAIN,
@@ -110,55 +191,46 @@ onMounted(() => {
           '#6b7280',
         ],
         'line-width': 3,
-        'line-opacity': 0.6,
+        'line-offset': ['get', 'lineOffset'],
+        'line-opacity': 0.85,
       },
     })
 
-    // Reachable node glow
+    // Reachable glow
     map.addLayer({
       id: 'nodes-reachable',
       type: 'circle',
       source: 'nodes',
       filter: ['==', ['get', 'isReachable'], true],
       paint: {
-        'circle-radius': 20,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 14, 15, 18, 18, 26],
         'circle-color': 'rgba(255,255,255,0.06)',
-        'circle-stroke-color': 'rgba(255,255,255,0.25)',
+        'circle-stroke-color': 'rgba(255,255,255,0.3)',
         'circle-stroke-width': 1.5,
       },
     })
 
-    // Node base circles
+    // Pie chart node icons — zoom-interpolated size
     map.addLayer({
       id: 'nodes',
-      type: 'circle',
+      type: 'symbol',
       source: 'nodes',
-      paint: {
-        'circle-radius': 14,
-        'circle-color': ['case',
-          ['get', 'isPlayer'],   '#2563eb',
-          ['get', 'isSelected'], '#374151',
-          '#1f2937',
-        ],
-        'circle-stroke-color': ['case',
-          ['get', 'isSelected'], '#ffffff',
-          '#4b5563',
-        ],
-        'circle-stroke-width': ['case',
-          ['get', 'isSelected'], 2,
-          1.5,
-        ],
+      layout: {
+        'icon-image': ['get', 'iconKey'],
+        'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 15, 0.6, 18, 1.0],
+        'icon-allow-overlap': true,
+        'icon-ignore-placement': true,
       },
     })
 
-    // Node ID numbers (inside circles)
+    // Node ID labels
     map.addLayer({
       id: 'node-ids',
       type: 'symbol',
       source: 'nodes',
       layout: {
         'text-field': ['to-string', ['get', 'id']],
-        'text-size': 11,
+        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 7, 15, 9, 18, 12],
         'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
         'text-anchor': 'center',
         'text-allow-overlap': true,
@@ -167,7 +239,7 @@ onMounted(() => {
       paint: { 'text-color': '#ffffff' },
     })
 
-    // Node name labels (below circles)
+    // Node name labels (below)
     map.addLayer({
       id: 'node-labels',
       type: 'symbol',
@@ -177,7 +249,7 @@ onMounted(() => {
         'text-size': 9,
         'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
         'text-anchor': 'top',
-        'text-offset': [0, 1.5],
+        'text-offset': [0, 1.2],
         'text-allow-overlap': false,
       },
       paint: {
@@ -187,14 +259,12 @@ onMounted(() => {
       },
     })
 
-    // Node click → select
     map.on('click', 'nodes', e => {
       if (!e.features?.length) return
       const nodeId = e.features[0].properties.id as number
       emit('select-node', props.nodes.find(n => n.id === nodeId) ?? null)
     })
 
-    // Map click outside nodes → deselect
     map.on('click', e => {
       const hit = map!.queryRenderedFeatures(e.point, { layers: ['nodes'] })
       if (!hit.length) emit('select-node', null)

@@ -23,12 +23,33 @@ info:
 
     Future in-game pushes will use per-player topics to support
     role-filtered state (Mr X position hidden from detectives).
-  version: 0.1.4
+  version: 0.1.5
 servers:
   - url: http://localhost:8080
     description: Local development server
 
 paths:
+
+  /map.json:
+    get:
+      summary: Get the game map
+      description: |
+        Returns the pre-computed Wellington graph served as a static file.
+        The frontend fetches this once on game board mount to populate the
+        map view with nodes and edges.
+
+        No authentication required. The file is served directly from Spring
+        Boot's static resource handler (`src/main/resources/static/map.json`).
+      operationId: getMap
+      responses:
+        '200':
+          description: Map data loaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapData'
+        '404':
+          description: map.json not present in static resources
 
   /api/games/create:
     post:
@@ -518,6 +539,64 @@ components:
     TicketType:
       type: string
       enum: [ESCOOTER, BUS, TRAIN, FERRY, BLACK, DOUBLE]
+
+    MapData:
+      type: object
+      required: [nodes, edges]
+      description: Pre-computed Wellington graph used by the game board map view
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/GraphEdge'
+
+    GraphNode:
+      type: object
+      required: [id, lat, lng, label]
+      properties:
+        id:
+          type: integer
+          description: Unique node identifier
+        lat:
+          type: number
+          format: double
+          description: Latitude in decimal degrees
+        lng:
+          type: number
+          format: double
+          description: Longitude in decimal degrees
+        label:
+          type: string
+          description: Human-readable node name
+
+    GraphEdge:
+      type: object
+      required: [from, to, modes]
+      properties:
+        from:
+          type: integer
+          description: ID of the source node
+        to:
+          type: integer
+          description: ID of the destination node
+        modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketType'
+          description: Transport modes available on this edge
+        coordinates:
+          type: array
+          description: Road-following polyline as [lng, lat] pairs; omitted for straight-line edges
+          items:
+            type: array
+            items:
+              type: number
+            minItems: 2
+            maxItems: 2
 
     ErrorResponse:
       type: object

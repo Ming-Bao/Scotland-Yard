@@ -1,4 +1,4 @@
-import type { GameStateDTO } from "../types/game";
+import type { GameStateDTO, MapData } from "../types/game";
 
 async function handleResponse<T>(res: Response): Promise<T> {
     const data = await res.json();
@@ -58,6 +58,12 @@ export async function leaveGame(gameId: string, playerId: string): Promise<void>
         method: "DELETE",
     });
     return handleNoContent(res);
+}
+
+export async function getMap(): Promise<MapData> {
+    const res = await fetch('/map.json')
+    if (!res.ok) throw new Error('Failed to load map data')
+    return res.json()
 }
 
 export async function kickPlayer(gameId: string, hostId: string, targetPlayerId: string): Promise<void> {

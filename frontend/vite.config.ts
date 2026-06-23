@@ -11,6 +11,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8999',
       '/ws': { target: 'http://localhost:8999', ws: true },
+      '/map.json': 'http://localhost:8999',
     }
   }
 })
