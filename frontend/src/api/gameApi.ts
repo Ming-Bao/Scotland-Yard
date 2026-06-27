@@ -1,10 +1,8 @@
-import type { GameStateDTO, MapData } from "../types/game";
+import type { GameStateDTO, MapData, ValidMovesDTO } from "../types/game";
 
 async function handleResponse<T>(res: Response): Promise<T> {
     const data = await res.json();
-    if (!res.ok) {
-        throw new Error(data.error ?? "Request failed");
-    }
+    if (!res.ok) throw new Error(data.error ?? "Request failed");
     return data as T;
 }
 
@@ -39,8 +37,9 @@ export async function joinGame(
     return handleResponse(res);
 }
 
-export async function getGame(gameId: string): Promise<GameStateDTO> {
-    const res = await fetch(`/api/games/${gameId}`);
+export async function getGame(gameId: string, playerId?: string): Promise<GameStateDTO> {
+    const url = playerId ? `/api/games/${gameId}?playerId=${playerId}` : `/api/games/${gameId}`;
+    const res = await fetch(url);
     return handleResponse(res);
 }
 
@@ -60,12 +59,6 @@ export async function leaveGame(gameId: string, playerId: string): Promise<void>
     return handleNoContent(res);
 }
 
-export async function getMap(): Promise<MapData> {
-    const res = await fetch('/test-map.json')
-    if (!res.ok) throw new Error('Failed to load map data')
-    return res.json()
-}
-
 export async function kickPlayer(gameId: string, hostId: string, targetPlayerId: string): Promise<void> {
     const res = await fetch(`/api/games/${gameId}/players/${targetPlayerId}`, {
         method: "DELETE",
@@ -73,4 +66,29 @@ export async function kickPlayer(gameId: string, hostId: string, targetPlayerId:
         body: JSON.stringify({ requesterId: hostId }),
     });
     return handleNoContent(res);
+}
+
+export async function getValidMoves(gameId: string, playerId: string): Promise<ValidMovesDTO> {
+    const res = await fetch(`/api/games/${gameId}/valid-moves?playerId=${playerId}`);
+    return handleResponse(res);
+}
+
+export async function submitMove(
+    gameId: string,
+    playerId: string,
+    toNodeId: number,
+    ticket: string,
+): Promise<GameStateDTO> {
+    const res = await fetch(`/api/games/${gameId}/moves`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ playerId, toNodeId, ticket }),
+    });
+    return handleResponse(res);
+}
+
+export async function getMap(): Promise<MapData> {
+    const res = await fetch('/test-map.json');
+    if (!res.ok) throw new Error('Failed to load map data');
+    return res.json();
 }

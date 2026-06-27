@@ -9,8 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.ArrayList;
+import java.util.List;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Lifecycle tests for GameService using a real in-memory GameRepository.
@@ -24,7 +28,16 @@ class GameLifecycleTest {
     void setUp() {
         GameRepository repo = new GameRepository();
         SimpMessagingTemplate messaging = mock(SimpMessagingTemplate.class);
-        gameService = new GameService(repo, messaging);
+        MapGraph mapGraph = mock(MapGraph.class);
+        when(mapGraph.randomNodes(anyInt(), any())).thenAnswer(inv -> {
+            int count = inv.getArgument(0);
+            List<Integer> ids = new ArrayList<>();
+            for (int i = 1; i <= count; i++) ids.add(i);
+            return ids;
+        });
+        when(mapGraph.validMoves(anyInt(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(List.of());
+        gameService = new GameService(repo, messaging, mapGraph);
         ReflectionTestUtils.setField(gameService, "escooterTickets", 10);
         ReflectionTestUtils.setField(gameService, "busTickets", 8);
         ReflectionTestUtils.setField(gameService, "trainTickets", 4);

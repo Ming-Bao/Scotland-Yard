@@ -142,7 +142,7 @@ class GameControllerTest {
 
     @Test
     void getGame_knownId_returns200WithGameState() throws Exception {
-        when(gameService.getGame("game-1")).thenReturn(lobbyState("game-1"));
+        when(gameService.getGame(eq("game-1"), isNull())).thenReturn(lobbyState("game-1"));
 
         mvc.perform(get("/api/games/game-1"))
                 .andExpect(status().isOk())
@@ -152,7 +152,7 @@ class GameControllerTest {
 
     @Test
     void getGame_unknownId_returns404() throws Exception {
-        when(gameService.getGame("unknown"))
+        when(gameService.getGame(eq("unknown"), isNull()))
                 .thenThrow(new GameNotFoundException("Game not found"));
 
         mvc.perform(get("/api/games/unknown"))

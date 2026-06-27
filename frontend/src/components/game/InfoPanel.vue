@@ -23,13 +23,19 @@
 
     <!-- Move selector -->
     <MoveSelector
+      v-if="isMyTurn"
       :selected-node="selectedNode"
       :available-modes="availableModes"
       :selected-ticket="selectedTicket"
       :reachable="reachable"
+      :submitting="submitting"
+      :move-error="moveError"
       @select-ticket="$emit('select-ticket', $event)"
       @confirm="$emit('confirm-move')"
     />
+    <div v-else-if="isMyTurn === false" class="waiting-msg">
+      Waiting for other players…
+    </div>
 
     <!-- Leave -->
     <div class="leave-section">
@@ -52,6 +58,9 @@ defineProps<{
   selectedTicket: string | null
   availableModes: string[]
   reachable: boolean
+  isMyTurn: boolean
+  submitting: boolean
+  moveError: string | null
 }>()
 
 defineEmits<{
@@ -91,6 +100,9 @@ defineEmits<{
 }
 .player-location {
   @apply text-xs text-gray-500 font-mono;
+}
+.waiting-msg {
+  @apply px-4 py-3 text-xs text-gray-500 dark:text-gray-600 italic;
 }
 .leave-section {
   @apply p-4 mt-auto border-t border-gray-200 dark:border-gray-800;

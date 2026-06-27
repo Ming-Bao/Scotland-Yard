@@ -1,7 +1,6 @@
 package com.scotlandyard.service;
 
-import com.scotlandyard.dto.GameStateDTO;
-import com.scotlandyard.dto.PlayerDTO;
+import com.scotlandyard.dto.*;
 import com.scotlandyard.exception.ConflictException;
 import com.scotlandyard.exception.ForbiddenException;
 import com.scotlandyard.exception.GameNotFoundException;
@@ -12,10 +11,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +19,8 @@ public class GameService {
 
     private static final String JOIN_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int JOIN_CODE_LENGTH = 6;
+    private static final Set<Integer> REVEAL_ROUNDS = Set.of(3, 8, 13, 18, 24);
+
     private final SecureRandom random = new SecureRandom();
 
     @Value("${game.detective-escooter-tickets:10}") private int escooterTickets;
@@ -32,18 +30,22 @@ public class GameService {
 
     private final GameRepository gameRepository;
     private final SimpMessagingTemplate messaging;
+    private final MapGraph mapGraph;
 
-    public GameService(GameRepository gameRepository, SimpMessagingTemplate messaging) {
+    public GameService(GameRepository gameRepository,
+                       SimpMessagingTemplate messaging,
+                       MapGraph mapGraph) {
         this.gameRepository = gameRepository;
         this.messaging = messaging;
+        this.mapGraph = mapGraph;
     }
 
-    private void broadcast(GameSession session) {
-        messaging.convertAndSend("/topic/games/" + session.getId(), toDTO(session));
-    }
+    // ── Public records ────────────────────────────────────────────────────────
 
     public record CreateResult(String playerId, GameStateDTO gameState) {}
     public record JoinResult(String playerId, GameStateDTO gameState) {}
+
+    // ── Lobby operations ─────────────────────────────────────────────────────
 
     public CreateResult createGame(String hostName, int maxPlayers) {
         if (hostName == null || hostName.isBlank())
@@ -54,18 +56,16 @@ public class GameService {
         String gameId   = UUID.randomUUID().toString();
         String playerId = UUID.randomUUID().toString();
 
-        Player host = new LobbyPlayer(playerId, hostName.trim());
-
         GameSession session = new GameSession();
         session.setId(gameId);
         session.setJoinCode(generateJoinCode());
         session.setPhase(GamePhase.LOBBY);
         session.setMaxPlayers(maxPlayers);
         session.setHostPlayerId(playerId);
-        session.getPlayers().add(host);
+        session.getPlayers().add(new LobbyPlayer(playerId, hostName.trim()));
 
         gameRepository.save(session);
-        return new CreateResult(playerId, toDTO(session));
+        return new CreateResult(playerId, toDTOUnfiltered(session));
     }
 
     public JoinResult joinGame(String joinCode, String playerName) {
@@ -83,18 +83,21 @@ public class GameService {
             throw new ConflictException("Game is full");
 
         String playerId = UUID.randomUUID().toString();
-        Player player = new LobbyPlayer(playerId, playerName.trim());
-        session.getPlayers().add(player);
+        session.getPlayers().add(new LobbyPlayer(playerId, playerName.trim()));
         gameRepository.save(session);
-        broadcast(session);
+        broadcastShared(session);
 
-        return new JoinResult(playerId, toDTO(session));
+        return new JoinResult(playerId, toDTOUnfiltered(session));
     }
 
-    public GameStateDTO getGame(String gameId) {
+    public GameStateDTO getGame(String gameId) { return getGame(gameId, null); }
+
+    public GameStateDTO getGame(String gameId, String viewingPlayerId) {
         GameSession session = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found"));
-        return toDTO(session);
+        return viewingPlayerId != null
+                ? toDTOForPlayer(session, viewingPlayerId)
+                : toDTOUnfiltered(session);
     }
 
     public GameStateDTO startGame(String gameId, String requestingPlayerId) {
@@ -113,55 +116,61 @@ public class GameService {
 
         int detectiveCount = lobby.size() - 1;
         List<Player> assigned = new ArrayList<>();
-
-        LobbyPlayer mrXSrc = (LobbyPlayer) lobby.get(0);
-        assigned.add(new MrXPlayer(mrXSrc.getId(), mrXSrc.getName(), detectiveCount));
-
+        assigned.add(new MrXPlayer(lobby.get(0).getId(), lobby.get(0).getName(), detectiveCount));
         for (int i = 1; i < lobby.size(); i++) {
-            LobbyPlayer d = (LobbyPlayer) lobby.get(i);
-            assigned.add(new DetectivePlayer(d.getId(), d.getName(),
+            Player p = lobby.get(i);
+            assigned.add(new DetectivePlayer(p.getId(), p.getName(),
                     escooterTickets, busTickets, trainTickets, ferryTickets));
         }
-
         session.setPlayers(assigned);
+
+        // Assign distinct random starting nodes
+        List<Integer> startNodes = mapGraph.randomNodes(assigned.size(), random);
+        for (int i = 0; i < assigned.size(); i++) {
+            assigned.get(i).setNodeId(startNodes.get(i));
+        }
+
         session.setPhase(GamePhase.IN_PROGRESS);
         session.setRound(1);
         session.setTurnPhase(TurnPhase.MR_X_TURN);
-        session.setCurrentPlayerId(assigned.get(0).getId());
+        session.setCurrentPlayerId(session.getMrX().getId());
+        session.setCurrentDetectiveIndex(0);
 
         gameRepository.save(session);
-        broadcast(session);
-        return toDTO(session);
+
+        // Shared broadcast so LobbyView clients detect IN_PROGRESS and navigate
+        broadcastShared(session);
+        // Per-player filtered broadcasts for GameBoardView
+        broadcastToAllPlayers(session);
+        // Push valid moves to Mr X immediately
+        pushValidMoves(session, session.getMrX().getId());
+
+        return toDTOForPlayer(session, requestingPlayerId);
     }
 
     public void leaveGame(String gameId, String playerId) {
         GameSession session = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found"));
 
-        Player leavingPlayer = session.getPlayers().stream()
-                .filter(p -> p.getId().equals(playerId))
-                .findFirst()
-                .orElseThrow(() -> new GameNotFoundException("Player not in game"));
+        Player leaving = findPlayer(session, playerId);
 
-        if (session.getPhase() == GamePhase.IN_PROGRESS && leavingPlayer instanceof MrXPlayer) {
+        if (session.getPhase() == GamePhase.IN_PROGRESS && leaving instanceof MrXPlayer) {
             session.setPhase(GamePhase.ENDED);
             session.setAbortReason("Mr. X has left the game");
-            session.getPlayers().remove(leavingPlayer);
+            session.getPlayers().remove(leaving);
             gameRepository.save(session);
-            broadcast(session);
+            broadcastToAllPlayers(session);
             return;
         }
 
-        session.getPlayers().remove(leavingPlayer);
-
+        session.getPlayers().remove(leaving);
         if (session.getPlayers().isEmpty()
                 || (session.getPhase() == GamePhase.LOBBY && playerId.equals(session.getHostPlayerId()))) {
             gameRepository.delete(gameId);
             return;
         }
-
         gameRepository.save(session);
-        broadcast(session);
+        broadcastShared(session);
     }
 
     public void kickPlayer(String gameId, String hostId, String targetPlayerId) {
@@ -175,15 +184,212 @@ public class GameService {
         if (hostId.equals(targetPlayerId))
             throw new IllegalArgumentException("Host cannot kick themselves");
 
-        boolean removed = session.getPlayers().removeIf(p -> p.getId().equals(targetPlayerId));
-        if (!removed)
+        if (!session.getPlayers().removeIf(p -> p.getId().equals(targetPlayerId)))
             throw new GameNotFoundException("Game or player not found");
 
         gameRepository.save(session);
-        broadcast(session);
+        broadcastShared(session);
     }
 
-    private GameStateDTO toDTO(GameSession session) {
+    // ── In-progress operations ────────────────────────────────────────────────
+
+    public ValidMovesDTO getValidMoves(String gameId, String playerId) {
+        GameSession session = gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
+        if (session.getPhase() != GamePhase.IN_PROGRESS)
+            throw new ConflictException("Game is not in progress");
+
+        Player player = findPlayer(session, playerId);
+        List<ValidMoveDTO> moves = computeValidMoves(session, player);
+        return new ValidMovesDTO(moves);
+    }
+
+    public GameStateDTO submitMove(String gameId, String playerId, int toNodeId, String ticketStr) {
+        GameSession session = gameRepository.findById(gameId)
+                .orElseThrow(() -> new GameNotFoundException("Game not found"));
+
+        synchronized (session) {
+            if (session.getPhase() != GamePhase.IN_PROGRESS)
+                throw new ConflictException("Game is not in progress");
+            if (!playerId.equals(session.getCurrentPlayerId()))
+                throw new ForbiddenException("Not your turn");
+
+            TicketType ticket;
+            try { ticket = TicketType.valueOf(ticketStr); }
+            catch (IllegalArgumentException e) { throw new IllegalArgumentException("Unknown ticket: " + ticketStr); }
+
+            Player player = findPlayer(session, playerId);
+
+            if (player instanceof MrXPlayer mrX) {
+                applyMrXMove(session, mrX, toNodeId, ticket);
+            } else {
+                applyDetectiveMove(session, (DetectivePlayer) player, toNodeId, ticket);
+            }
+
+            gameRepository.save(session);
+            broadcastToAllPlayers(session);
+
+            return toDTOForPlayer(session, playerId);
+        }
+    }
+
+    // ── Move application ─────────────────────────────────────────────────────
+
+    private void applyMrXMove(GameSession session, MrXPlayer mrX, int toNodeId, TicketType ticket) {
+        Set<Integer> detectiveNodes = detectiveNodeIds(session);
+
+        if (detectiveNodes.contains(toNodeId))
+            throw new IllegalArgumentException("Mr X cannot move to a node occupied by a detective");
+
+        boolean doubleFirstLeg = ticket == TicketType.DOUBLE;
+        boolean doubleSecondLeg = session.isMrXDoubleMovePending();
+
+        if (doubleFirstLeg) {
+            // DOUBLE first leg: any adjacent node, deduct DOUBLE ticket
+            if (!mapGraph.isAdjacent(mrX.getNodeId(), toNodeId))
+                throw new IllegalArgumentException("Node is not adjacent");
+            mrX.useTicket(TicketType.DOUBLE);
+        } else {
+            // Normal move or double second leg: must match edge modes (or use BLACK on any edge)
+            validateAndDeductTicket(mrX, toNodeId, ticket);
+        }
+
+        mrX.setNodeId(toNodeId);
+
+        // Log entry
+        boolean revealRound = REVEAL_ROUNDS.contains(session.getRound());
+        int leg = doubleFirstLeg ? 1 : (doubleSecondLeg ? 2 : 1);
+        boolean finalLeg = !doubleFirstLeg;
+        Integer revealedNode = (revealRound && finalLeg) ? toNodeId : null;
+        session.getMrXLog().add(new MrXLogEntry(session.getRound(), leg, ticket, revealedNode));
+
+        if (doubleFirstLeg) {
+            // Stay in MR_X_TURN for the second leg
+            session.setMrXDoubleMovePending(true);
+            pushValidMoves(session, mrX.getId());
+        } else {
+            // Turn complete — advance to detectives
+            session.setMrXDoubleMovePending(false);
+            advanceToDetectiveTurn(session);
+        }
+    }
+
+    private void applyDetectiveMove(GameSession session, DetectivePlayer detective, int toNodeId, TicketType ticket) {
+        validateAndDeductTicket(detective, toNodeId, ticket);
+        detective.setNodeId(toNodeId);
+
+        // Check if detective caught Mr X
+        MrXPlayer mrX = session.getMrX();
+        if (mrX != null && toNodeId == mrX.getNodeId()) {
+            session.setPhase(GamePhase.ENDED);
+            session.setWinner("DETECTIVES");
+            return;
+        }
+
+        advanceDetectiveTurn(session);
+    }
+
+    // ── Turn advancement ─────────────────────────────────────────────────────
+
+    private void advanceToDetectiveTurn(GameSession session) {
+        List<Player> detectives = session.getDetectives();
+        session.setTurnPhase(TurnPhase.DETECTIVE_TURN);
+        session.setCurrentDetectiveIndex(0);
+        skipToNextDetectiveWithMoves(session, detectives, 0);
+    }
+
+    private void advanceDetectiveTurn(GameSession session) {
+        List<Player> detectives = session.getDetectives();
+        int next = session.getCurrentDetectiveIndex() + 1;
+        skipToNextDetectiveWithMoves(session, detectives, next);
+    }
+
+    /** Finds the next detective (from {@code startIdx}) with valid moves. If none, advances the round. */
+    private void skipToNextDetectiveWithMoves(GameSession session, List<Player> detectives, int startIdx) {
+        for (int i = startIdx; i < detectives.size(); i++) {
+            Player det = detectives.get(i);
+            if (!computeValidMoves(session, det).isEmpty()) {
+                session.setCurrentDetectiveIndex(i);
+                session.setCurrentPlayerId(det.getId());
+                pushValidMoves(session, det.getId());
+                return;
+            }
+        }
+        // All remaining detectives have no valid moves — advance round
+        advanceRound(session);
+    }
+
+    private void advanceRound(GameSession session) {
+        if (session.getRound() >= 24) {
+            session.setPhase(GamePhase.ENDED);
+            session.setWinner("MR_X");
+            return;
+        }
+        session.setRound(session.getRound() + 1);
+        session.setTurnPhase(TurnPhase.MR_X_TURN);
+        session.setCurrentDetectiveIndex(0);
+        MrXPlayer mrX = session.getMrX();
+        session.setCurrentPlayerId(mrX.getId());
+        pushValidMoves(session, mrX.getId());
+    }
+
+    // ── Validation helpers ────────────────────────────────────────────────────
+
+    private void validateAndDeductTicket(Player player, int toNodeId, TicketType ticket) {
+        if (ticket == TicketType.DOUBLE)
+            throw new IllegalArgumentException("DOUBLE can only be used as the first leg of a double move");
+
+        Integer count = player.getTicket(ticket);
+        if (count == null)
+            throw new IllegalArgumentException("Player does not have ticket: " + ticket);
+        if (count == 0)
+            throw new IllegalArgumentException("No " + ticket + " tickets remaining");
+
+        if (ticket == TicketType.BLACK) {
+            if (!mapGraph.isAdjacent(player.getNodeId(), toNodeId))
+                throw new IllegalArgumentException("Node is not adjacent");
+        } else {
+            Set<com.scotlandyard.model.TicketType> modes = mapGraph.getEdgeModes(player.getNodeId(), toNodeId);
+            if (modes.isEmpty())
+                throw new IllegalArgumentException("No connection between those nodes");
+            if (!modes.contains(ticket))
+                throw new IllegalArgumentException("Ticket type " + ticket + " not valid for this edge");
+        }
+
+        player.useTicket(ticket);
+    }
+
+    private List<ValidMoveDTO> computeValidMoves(GameSession session, Player player) {
+        if (player.getNodeId() == null) return List.of();
+        boolean isMrX = player instanceof MrXPlayer;
+        Set<Integer> blocked = isMrX ? detectiveNodeIds(session) : Set.of();
+        return mapGraph.validMoves(player.getNodeId(), player.getTickets(), isMrX,
+                session.isMrXDoubleMovePending(), blocked);
+    }
+
+    private Set<Integer> detectiveNodeIds(GameSession session) {
+        return session.getDetectives().stream()
+                .map(Player::getNodeId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    // ── DTO mapping ───────────────────────────────────────────────────────────
+
+    /** Unfiltered — used for lobby broadcasts where there is no sensitive data. */
+    private GameStateDTO toDTOUnfiltered(GameSession session) {
+        return buildDTO(session, null);
+    }
+
+    /** Role-filtered view for a specific player. */
+    private GameStateDTO toDTOForPlayer(GameSession session, String viewingPlayerId) {
+        return buildDTO(session, viewingPlayerId);
+    }
+
+    private GameStateDTO buildDTO(GameSession session, String viewingPlayerId) {
+        boolean viewerIsMrX = viewingPlayerId != null && session.getPlayers().stream()
+                .anyMatch(p -> p.getId().equals(viewingPlayerId) && p instanceof MrXPlayer);
+
         GameStateDTO dto = new GameStateDTO();
         dto.setGameId(session.getId());
         dto.setJoinCode(session.getJoinCode());
@@ -194,18 +400,92 @@ public class GameService {
         dto.setCurrentPlayerId(session.getCurrentPlayerId());
         dto.setWinner(session.getWinner());
         dto.setAbortReason(session.getAbortReason());
-        dto.setPlayers(session.getPlayers().stream().map(this::toPlayerDTO).collect(Collectors.toList()));
+        dto.setMrXDoubleMovePending(session.isMrXDoubleMovePending());
+
+        dto.setPlayers(session.getPlayers().stream()
+                .map(p -> toPlayerDTO(p, viewerIsMrX, session))
+                .collect(Collectors.toList()));
+
+        dto.setMrXLog(session.getMrXLog().stream()
+                .map(this::toLogEntryDTO)
+                .collect(Collectors.toList()));
+
         return dto;
     }
 
-    private PlayerDTO toPlayerDTO(Player player) {
+    private PlayerDTO toPlayerDTO(Player player, boolean viewerIsMrX, GameSession session) {
         PlayerDTO dto = new PlayerDTO();
         dto.setId(player.getId());
         dto.setName(player.getName());
         dto.setRole(player.getRole());
-        dto.setNodeId(player.getNodeId());
         dto.setTickets(player.getTickets());
+
+        if (player instanceof MrXPlayer && !viewerIsMrX) {
+            // Hide Mr X's position unless a reveal entry exists for the current round
+            Integer revealed = session.getMrXLog().stream()
+                    .filter(e -> e.getRound() == session.getRound() && e.getNodeId() != null)
+                    .map(MrXLogEntry::getNodeId)
+                    .findFirst()
+                    .orElse(null);
+            dto.setNodeId(revealed);
+        } else {
+            dto.setNodeId(player.getNodeId());
+        }
+
         return dto;
+    }
+
+    private MrXLogEntryDTO toLogEntryDTO(MrXLogEntry e) {
+        MrXLogEntryDTO dto = new MrXLogEntryDTO();
+        dto.setRound(e.getRound());
+        dto.setLeg(e.getLeg());
+        dto.setTicketUsed(e.getTicketUsed());
+        dto.setNodeId(e.getNodeId()); // already null on non-reveal rounds
+        return dto;
+    }
+
+    // ── Broadcasting ──────────────────────────────────────────────────────────
+
+    /** Shared topic — for lobby operations and phase-change detection. */
+    private void broadcastShared(GameSession session) {
+        messaging.convertAndSend("/topic/games/" + session.getId(), toDTOUnfiltered(session));
+    }
+
+    /** Per-player filtered topics — for in-game state with Mr X position hidden. */
+    private void broadcastToAllPlayers(GameSession session) {
+        for (Player p : session.getPlayers()) {
+            messaging.convertAndSend(
+                "/topic/games/" + session.getId() + "/players/" + p.getId(),
+                toDTOForPlayer(session, p.getId())
+            );
+        }
+    }
+
+    /** Push valid moves to a specific player's topic. */
+    private void pushValidMoves(GameSession session, String playerId) {
+        if (session.getPhase() != GamePhase.IN_PROGRESS) return;
+        Player player = findPlayerOrNull(session, playerId);
+        if (player == null) return;
+        List<ValidMoveDTO> moves = computeValidMoves(session, player);
+        messaging.convertAndSend(
+            "/topic/games/" + session.getId() + "/players/" + playerId + "/valid-moves",
+            new ValidMovesDTO(moves)
+        );
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────────
+
+    private Player findPlayer(GameSession session, String playerId) {
+        return session.getPlayers().stream()
+                .filter(p -> p.getId().equals(playerId))
+                .findFirst()
+                .orElseThrow(() -> new GameNotFoundException("Player not found"));
+    }
+
+    private Player findPlayerOrNull(GameSession session, String playerId) {
+        return session.getPlayers().stream()
+                .filter(p -> p.getId().equals(playerId))
+                .findFirst().orElse(null);
     }
 
     private String generateJoinCode() {

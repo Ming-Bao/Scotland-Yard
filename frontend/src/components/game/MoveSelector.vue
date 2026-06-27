@@ -17,11 +17,12 @@
             @click="$emit('select-ticket', mode)"
           >{{ modeLabel(mode) }}</button>
         </div>
+        <p v-if="moveError" class="move-error-msg">{{ moveError }}</p>
         <button
-          :disabled="!selectedTicket"
+          :disabled="!selectedTicket || submitting"
           class="confirm-btn"
           @click="$emit('confirm')"
-        >Confirm Move</button>
+        >{{ submitting ? 'Moving…' : 'Confirm Move' }}</button>
       </template>
 
       <template v-else>
@@ -45,6 +46,8 @@ defineProps<{
   availableModes: string[]
   selectedTicket: string | null
   reachable: boolean
+  submitting: boolean
+  moveError: string | null
 }>()
 
 defineEmits<{
@@ -85,6 +88,9 @@ defineEmits<{
 .confirm-btn {
   @apply w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed
          text-white text-sm font-medium py-2 rounded-lg transition-colors;
+}
+.move-error-msg {
+  @apply text-xs text-red-500 mb-2;
 }
 .no-connection {
   @apply text-xs text-gray-600 italic;

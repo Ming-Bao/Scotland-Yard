@@ -1,10 +1,6 @@
 package com.scotlandyard.controller;
 
-import com.scotlandyard.dto.CreateGameRequest;
-import com.scotlandyard.dto.GameStateDTO;
-import com.scotlandyard.dto.JoinGameRequest;
-import com.scotlandyard.dto.RemovePlayerRequest;
-import com.scotlandyard.dto.StartGameRequest;
+import com.scotlandyard.dto.*;
 import com.scotlandyard.exception.ConflictException;
 import com.scotlandyard.exception.ForbiddenException;
 import com.scotlandyard.exception.GameNotFoundException;
@@ -50,9 +46,10 @@ public class GameController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getGame(@PathVariable String id) {
+    public ResponseEntity<?> getGame(@PathVariable String id,
+                                     @RequestParam(required = false) String playerId) {
         try {
-            GameStateDTO state = gameService.getGame(id);
+            GameStateDTO state = gameService.getGame(id, playerId);
             return ResponseEntity.ok(state);
         } catch (GameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
@@ -82,15 +79,45 @@ public class GameController {
             @RequestBody(required = false) RemovePlayerRequest req) {
         try {
             String requesterId = (req != null && req.getRequesterId() != null)
-                    ? req.getRequesterId()
-                    : targetPlayerId;
-
+                    ? req.getRequesterId() : targetPlayerId;
             if (requesterId.equals(targetPlayerId)) {
                 gameService.leaveGame(id, targetPlayerId);
             } else {
                 gameService.kickPlayer(id, requesterId, targetPlayerId);
             }
             return ResponseEntity.noContent().build();
+        } catch (GameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (ForbiddenException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", e.getMessage()));
+        } catch (ConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}/valid-moves")
+    public ResponseEntity<?> getValidMoves(@PathVariable String id,
+                                           @RequestParam String playerId) {
+        try {
+            ValidMovesDTO moves = gameService.getValidMoves(id, playerId);
+            return ResponseEntity.ok(moves);
+        } catch (GameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (ConflictException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/moves")
+    public ResponseEntity<?> submitMove(@PathVariable String id,
+                                        @RequestBody MoveRequestDTO req) {
+        try {
+            GameStateDTO state = gameService.submitMove(id, req.getPlayerId(), req.getToNodeId(), req.getTicket());
+            return ResponseEntity.ok(state);
         } catch (GameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (ForbiddenException e) {

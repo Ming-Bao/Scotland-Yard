@@ -2,10 +2,10 @@
   <div class="log-section">
     <p class="section-label">Mr X Log</p>
     <div v-if="log.length === 0" class="log-empty">No moves yet</div>
-    <div v-for="entry in log" :key="entry.round" class="log-row">
-      <span class="log-round">Round {{ entry.round }}</span>
-      <span class="log-ticket" :style="{ color: modeColor(entry.ticket) }">{{ modeLabel(entry.ticket) }}</span>
-      <span class="log-node">{{ entry.node ?? '?' }}</span>
+    <div v-for="(entry, i) in log" :key="i" class="log-row">
+      <span class="log-round">R{{ entry.round }}<span v-if="entry.leg === 2" class="log-leg">b</span></span>
+      <span class="log-ticket" :style="{ color: modeColor(entry.ticketUsed) }">{{ modeLabel(entry.ticketUsed) }}</span>
+      <span class="log-node">{{ entry.nodeId ?? '?' }}</span>
     </div>
   </div>
 </template>
@@ -38,6 +38,9 @@ defineProps<{ log: MrXLogEntry[] }>()
 }
 .log-ticket {
   @apply text-xs font-medium;
+}
+.log-leg {
+  @apply text-gray-400 ml-0.5;
 }
 .log-node {
   @apply text-xs text-gray-500 dark:text-gray-400 font-mono;

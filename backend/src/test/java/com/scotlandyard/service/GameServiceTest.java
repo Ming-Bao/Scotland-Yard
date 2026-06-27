@@ -27,6 +27,7 @@ class GameServiceTest {
 
     @Mock GameRepository gameRepository;
     @Mock SimpMessagingTemplate messaging;
+    @Mock MapGraph mapGraph;
 
     @InjectMocks GameService gameService;
 
@@ -36,6 +37,15 @@ class GameServiceTest {
         ReflectionTestUtils.setField(gameService, "busTickets", 8);
         ReflectionTestUtils.setField(gameService, "trainTickets", 4);
         ReflectionTestUtils.setField(gameService, "ferryTickets", 2);
+        // Lenient: only some tests exercise the graph (startGame / moves)
+        lenient().when(mapGraph.randomNodes(anyInt(), any())).thenAnswer(inv -> {
+            int count = inv.getArgument(0);
+            java.util.List<Integer> ids = new java.util.ArrayList<>();
+            for (int i = 1; i <= count; i++) ids.add(i);
+            return ids;
+        });
+        lenient().when(mapGraph.validMoves(anyInt(), any(), anyBoolean(), anyBoolean(), any()))
+                .thenReturn(java.util.List.of());
     }
 
     // -------------------------------------------------------------------------
@@ -461,8 +471,11 @@ class GameServiceTest {
 
         gameService.leaveGame(session.getId(), mrXId);
 
+        // In-progress games broadcast per-player (not the shared lobby topic)
         ArgumentCaptor<GameStateDTO> stateCaptor = ArgumentCaptor.forClass(GameStateDTO.class);
-        verify(messaging).convertAndSend(eq("/topic/games/" + session.getId()), stateCaptor.capture());
+        verify(messaging, atLeast(1)).convertAndSend(
+                contains("/topic/games/" + session.getId() + "/players/"),
+                stateCaptor.capture());
         assertThat(stateCaptor.getValue().getPhase()).isEqualTo(GamePhase.ENDED);
         assertThat(stateCaptor.getValue().getAbortReason()).isNotBlank();
     }

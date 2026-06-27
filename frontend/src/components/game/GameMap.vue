@@ -22,6 +22,7 @@ const props = defineProps<{
   edges: GraphEdge[]
   playerNode: number
   selectedNode: GraphNode | null
+  reachableIds?: Set<number>
 }>()
 
 const emit = defineEmits<{ 'select-node': [node: GraphNode | null] }>()
@@ -112,16 +113,17 @@ function nodeGeoJSON() {
       const key   = modesKey(modes)
       const isPlayer   = n.id === props.playerNode
       const isSelected = n.id === props.selectedNode?.id
-      const isReachable = !isPlayer && props.edges.some(
-        e => (e.from === props.playerNode && e.to === n.id) ||
-             (e.to   === props.playerNode && e.from === n.id)
-      )
+      const isReachable = !isPlayer && !!(props.reachableIds?.has(n.id) ??
+        props.edges.some(
+          e => (e.from === props.playerNode && e.to === n.id) ||
+               (e.to   === props.playerNode && e.from === n.id)
+        ))
       const iconKey = isPlayer ? `node-${key}-player`
                     : isSelected ? `node-${key}-selected`
                     : `node-${key}`
       return {
         type: 'Feature' as const,
-        properties: { id: n.id, label: n.label, isReachable, iconKey },
+        properties: { id: n.id, label: n.label, isReachable, isPlayer, iconKey },
         geometry: { type: 'Point' as const, coordinates: [n.lng, n.lat] },
       }
     }),
@@ -210,14 +212,32 @@ onMounted(() => {
       },
     })
 
-    // Pie chart node icons — zoom-interpolated size
+    // Player position glow — large solid ring so the occupied node stands out
+    map.addLayer({
+      id: 'nodes-player-glow',
+      type: 'circle',
+      source: 'nodes',
+      filter: ['==', ['get', 'isPlayer'], true],
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 16, 15, 22, 18, 32],
+        'circle-color': 'rgba(37,99,235,0.18)',
+        'circle-stroke-color': '#3b82f6',
+        'circle-stroke-width': 3,
+      },
+    })
+
+    // Pie chart node icons — zoom-interpolated size; player node rendered larger
     map.addLayer({
       id: 'nodes',
       type: 'symbol',
       source: 'nodes',
       layout: {
         'icon-image': ['get', 'iconKey'],
-        'icon-size': ['interpolate', ['linear'], ['zoom'], 12, 0.4, 15, 0.6, 18, 1.0],
+        'icon-size': ['interpolate', ['linear'], ['zoom'],
+          12, ['case', ['boolean', ['get', 'isPlayer'], false], 0.6,  0.4],
+          15, ['case', ['boolean', ['get', 'isPlayer'], false], 0.85, 0.6],
+          18, ['case', ['boolean', ['get', 'isPlayer'], false], 1.3,  1.0],
+        ],
         'icon-allow-overlap': true,
         'icon-ignore-placement': true,
       },
@@ -281,7 +301,7 @@ onUnmounted(() => {
 })
 
 watch(
-  [() => props.nodes, () => props.edges, () => props.playerNode, () => props.selectedNode],
+  [() => props.nodes, () => props.edges, () => props.playerNode, () => props.selectedNode, () => props.reachableIds],
   updateSources,
   { deep: true },
 )

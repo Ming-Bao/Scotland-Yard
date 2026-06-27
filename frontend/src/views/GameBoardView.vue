@@ -3,15 +3,16 @@
     <!-- Header -->
     <div class="header">
       <div class="header-left">
-        <RouterLink to="/" class="back-btn">
-          <ArrowLeft :size="18" />
-        </RouterLink>
+        <RouterLink to="/" class="back-btn"><ArrowLeft :size="18" /></RouterLink>
         <h1 class="game-title">Scotland Yard</h1>
         <span class="game-subtitle">Wellington Edition</span>
       </div>
       <div class="header-right">
-        <span class="round-label">Round <span class="round-num">1</span> / 24</span>
-        <span class="turn-badge">Mr X Turn</span>
+        <span class="round-label">
+          Round <span class="round-num">{{ gameState?.round ?? 1 }}</span> / 24
+        </span>
+        <span class="turn-badge" :class="turnBadgeClass">{{ turnLabel }}</span>
+        <span v-if="gameState?.mrXDoubleMovePending" class="double-badge">Double Move — 2nd leg</span>
       </div>
     </div>
 
@@ -23,19 +24,23 @@
       <GameMap
         :nodes="nodes"
         :edges="edges"
-        :player-node="playerNode"
+        :player-node="myNodeId"
         :selected-node="selectedNode"
+        :reachable-ids="reachableNodeIds"
         @select-node="handleSelectNode"
       />
 
       <InfoPanel
-        :players="demoPlayers"
-        :tickets="demoTickets"
-        :mr-x-log="mrXLog"
+        :players="displayPlayers"
+        :tickets="myTickets"
+        :mr-x-log="gameState?.mrXLog ?? []"
         :selected-node="selectedNode"
         :selected-ticket="selectedTicket"
-        :available-modes="availableModes"
-        :reachable="reachable"
+        :available-modes="ticketOptionsForSelected"
+        :reachable="isSelectedReachable"
+        :is-my-turn="store.isMyTurn"
+        :submitting="submitting"
+        :move-error="moveError"
         @select-ticket="selectedTicket = $event"
         @confirm-move="confirmMove"
         @leave="handleLeave"
@@ -45,85 +50,223 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { Client } from '@stomp/stompjs'
+import SockJS from 'sockjs-client'
 import { ArrowLeft } from 'lucide-vue-next'
 import { useGameStore } from '../stores/gameStore'
-import { leaveGame, getMap } from '../api/gameApi'
-import type { GraphNode, GraphEdge, MrXLogEntry } from '../types/game'
-import { MODE_COLORS } from '../utils/transportModes'
+import { leaveGame, getMap, getGame, getValidMoves, submitMove } from '../api/gameApi'
+import type { GraphNode, GraphEdge, DemoPlayer, DemoTicket, ValidMoveDTO } from '../types/game'
+import { MODE_COLORS, modeLabel } from '../utils/transportModes'
 import GameMap from '../components/game/GameMap.vue'
 import InfoPanel from '../components/game/InfoPanel.vue'
 
+const route  = useRoute()
 const router = useRouter()
-const store = useGameStore()
+const store  = useGameStore()
 
-// --- Map data ---
+const gameId = computed(() => route.params.id as string)
 
-const nodes = ref<GraphNode[]>([])
-const edges = ref<GraphEdge[]>([])
+// ── Map data ──────────────────────────────────────────────────────────────────
+
+const nodes    = ref<GraphNode[]>([])
+const edges    = ref<GraphEdge[]>([])
 const mapError = ref<string | null>(null)
 
+// ── Move state ────────────────────────────────────────────────────────────────
+
+const selectedNode   = ref<GraphNode | null>(null)
+const selectedTicket = ref<string | null>(null)
+const submitting     = ref(false)
+const moveError      = ref<string | null>(null)
+
+// ── Derived state ─────────────────────────────────────────────────────────────
+
+const gameState = computed(() => store.gameState)
+
+const myNodeId = computed<number>(() => {
+  return store.myPlayer?.nodeId ?? 0
+})
+
+const reachableNodeIds = computed<Set<number>>(() => {
+  return new Set(store.validMoves.map(m => m.nodeId))
+})
+
+const isSelectedReachable = computed(() =>
+  !!selectedNode.value && reachableNodeIds.value.has(selectedNode.value.id)
+)
+
+const ticketOptionsForSelected = computed<string[]>(() => {
+  if (!selectedNode.value) return []
+  const move = store.validMoves.find(m => m.nodeId === selectedNode.value!.id)
+  return move?.ticketOptions ?? []
+})
+
+// Player colors for detectives (up to 5)
+const DETECTIVE_COLORS = ['#2563eb', '#16a34a', '#d97706', '#7c3aed', '#db2777']
+
+const displayPlayers = computed<DemoPlayer[]>(() => {
+  if (!gameState.value) return []
+  let detIdx = 0
+  return gameState.value.players.map(p => {
+    const isMe = p.id === store.playerId
+    if (p.role === 'MR_X') {
+      return { name: p.name, isYou: isMe, role: 'MR_X', node: p.nodeId, color: '#ef4444' }
+    } else {
+      const color = DETECTIVE_COLORS[detIdx++ % DETECTIVE_COLORS.length]
+      return { name: p.name, isYou: isMe, role: 'DETECTIVE', node: p.nodeId, color }
+    }
+  })
+})
+
+const myTickets = computed<DemoTicket[]>(() => {
+  const t = store.myPlayer?.tickets
+  if (!t) return []
+  const order: Array<{ type: string; label: string; color: string }> = [
+    { type: 'ESCOOTER', label: 'Escooter', color: MODE_COLORS.ESCOOTER },
+    { type: 'BUS',      label: 'Bus',      color: MODE_COLORS.BUS },
+    { type: 'TRAIN',    label: 'Train',    color: MODE_COLORS.TRAIN },
+    { type: 'FERRY',    label: 'Ferry',    color: MODE_COLORS.FERRY },
+    { type: 'BLACK',    label: 'Black',    color: MODE_COLORS.BLACK },
+    { type: 'DOUBLE',   label: 'Double',   color: '#f59e0b' },
+  ]
+  return order
+    .filter(o => t[o.type as keyof typeof t] !== undefined && t[o.type as keyof typeof t] !== 0)
+    .map(o => ({ ...o, count: t[o.type as keyof typeof t] as number }))
+})
+
+const turnLabel = computed(() => {
+  if (!gameState.value || gameState.value.phase !== 'IN_PROGRESS') return ''
+  const cur = gameState.value.players.find(p => p.id === gameState.value!.currentPlayerId)
+  if (!cur) return ''
+  if (store.isMyTurn) return 'Your Turn'
+  return cur.role === 'MR_X' ? "Mr X's Turn" : `${cur.name}'s Turn`
+})
+
+const turnBadgeClass = computed(() => ({
+  'turn-badge--mrx':       gameState.value?.turnPhase === 'MR_X_TURN',
+  'turn-badge--detective': gameState.value?.turnPhase === 'DETECTIVE_TURN',
+  'turn-badge--mine':      store.isMyTurn,
+}))
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+
+let stompClient: Client | null = null
+
+function connectWs() {
+  if (!store.playerId || gameId.value === 'preview') return
+
+  stompClient = new Client({
+    webSocketFactory: () => new SockJS('/ws'),
+    onConnect: () => {
+      // Per-player state topic
+      stompClient!.subscribe(
+        `/topic/games/${gameId.value}/players/${store.playerId}`,
+        msg => {
+          const state = JSON.parse(msg.body)
+          store.updateGameState(state)
+          if (state.phase === 'ENDED') {
+            stompClient?.deactivate()
+            router.push(`/game/${gameId.value}/end`)
+          }
+        }
+      )
+      // Valid moves pushed by server when it becomes this player's turn
+      stompClient!.subscribe(
+        `/topic/games/${gameId.value}/players/${store.playerId}/valid-moves`,
+        msg => {
+          const data = JSON.parse(msg.body)
+          store.setValidMoves(data.moves ?? [])
+        }
+      )
+    },
+  })
+  stompClient.activate()
+}
+
+// ── Lifecycle ─────────────────────────────────────────────────────────────────
+
 onMounted(async () => {
+  // Load map
   try {
     const map = await getMap()
     nodes.value = map.nodes
     edges.value = map.edges
-    if (map.nodes.length > 0) playerNode.value = map.nodes[0].id
   } catch (e) {
     mapError.value = e instanceof Error ? e.message : 'Failed to load map'
   }
+
+  // Fetch current (role-filtered) game state
+  if (store.playerId && gameId.value && gameId.value !== 'preview') {
+    try {
+      const state = await getGame(gameId.value, store.playerId)
+      store.updateGameState(state)
+      if (state.phase === 'ENDED') {
+        router.push(`/game/${gameId.value}/end`)
+        return
+      }
+      // If it's already our turn, fetch valid moves
+      if (state.currentPlayerId === store.playerId && state.phase === 'IN_PROGRESS') {
+        const moves = await getValidMoves(gameId.value, store.playerId)
+        store.setValidMoves(moves.moves)
+      }
+    } catch { /* use whatever was already in the store */ }
+  }
+
+  connectWs()
 })
 
-// --- Player state ---
+onUnmounted(() => {
+  stompClient?.deactivate()
+})
 
-const playerNode = ref(0)
-const selectedNode = ref<GraphNode | null>(null)
-const selectedTicket = ref<string | null>(null)
+// Also fetch valid moves when the store says it becomes our turn
+// (handles cases where the WebSocket push arrived before we subscribed)
+watch(
+  () => store.isMyTurn,
+  async (nowMyTurn) => {
+    if (nowMyTurn && store.validMoves.length === 0 && gameId.value && store.playerId) {
+      try {
+        const moves = await getValidMoves(gameId.value, store.playerId)
+        store.setValidMoves(moves.moves)
+      } catch { /* ignore */ }
+    }
+  }
+)
 
-const demoPlayers = [
-  { name: store.gameState?.players.find(p => p.id === store.playerId)?.name ?? 'You', isYou: true, role: 'DETECTIVE', node: playerNode.value, color: '#2563eb' },
-  { name: 'Mr X', isYou: false, role: 'MR_X', node: null, color: '#ef4444' },
-]
-
-const demoTickets = computed(() => [
-  { type: 'ESCOOTER', label: 'Escooter', count: 10, color: MODE_COLORS.ESCOOTER },
-  { type: 'BUS',      label: 'Bus',      count: 8,  color: MODE_COLORS.BUS },
-  { type: 'TRAIN',    label: 'Train',    count: 4,  color: MODE_COLORS.TRAIN },
-  { type: 'FERRY',    label: 'Ferry',    count: 2,  color: MODE_COLORS.FERRY },
-])
-
-const mrXLog: MrXLogEntry[] = []
-
-function edgeTo(targetId: number | undefined): GraphEdge | undefined {
-  if (targetId == null) return undefined
-  return edges.value.find(e =>
-    (e.from === playerNode.value && e.to === targetId) ||
-    (e.to === playerNode.value && e.from === targetId)
-  )
-}
-
-const currentEdge = computed(() => edgeTo(selectedNode.value?.id))
-const reachable = computed(() => !!currentEdge.value)
-const availableModes = computed(() => currentEdge.value?.modes ?? [])
+// ── Interaction ───────────────────────────────────────────────────────────────
 
 function handleSelectNode(node: GraphNode | null) {
-  if (node?.id === playerNode.value) return
+  if (!store.isMyTurn) return
+  if (node?.id === myNodeId.value) return
   selectedNode.value = node
   selectedTicket.value = null
+  moveError.value = null
 }
 
-function confirmMove() {
-  if (!selectedNode.value || !selectedTicket.value) return
-  playerNode.value = selectedNode.value.id
-  selectedNode.value = null
-  selectedTicket.value = null
+async function confirmMove() {
+  if (!selectedNode.value || !selectedTicket.value || !store.playerId || !gameId.value) return
+  submitting.value = true
+  moveError.value = null
+  try {
+    await submitMove(gameId.value, store.playerId, selectedNode.value.id, selectedTicket.value)
+    selectedNode.value = null
+    selectedTicket.value = null
+    store.setValidMoves([])
+  } catch (e) {
+    moveError.value = e instanceof Error ? e.message : 'Move failed'
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function handleLeave() {
-  const { gameId, playerId } = store
-  if (gameId && playerId && gameId !== 'preview') {
-    try { await leaveGame(gameId, playerId) } catch { /* ignore */ }
+  stompClient?.deactivate()
+  const id  = gameId.value
+  const pid = store.playerId
+  if (id && pid && id !== 'preview') {
+    try { await leaveGame(id, pid) } catch { /* ignore */ }
   }
   store.clearGame()
   router.push('/')
@@ -146,27 +289,21 @@ async function handleLeave() {
 .back-btn {
   @apply text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors;
 }
-.game-title {
-  @apply text-gray-900 dark:text-white font-bold;
-}
-.game-subtitle {
-  @apply text-gray-500 dark:text-gray-600 text-sm font-mono;
-}
-.header-right {
-  @apply flex items-center gap-4;
-}
-.round-label {
-  @apply text-gray-600 dark:text-gray-400 text-sm;
-}
-.round-num {
-  @apply text-gray-900 dark:text-white font-mono;
-}
+.game-title  { @apply text-gray-900 dark:text-white font-bold; }
+.game-subtitle { @apply text-gray-500 dark:text-gray-600 text-sm font-mono; }
+.header-right { @apply flex items-center gap-3; }
+.round-label  { @apply text-gray-600 dark:text-gray-400 text-sm; }
+.round-num    { @apply text-gray-900 dark:text-white font-mono; }
 .turn-badge {
-  @apply bg-blue-600/20 text-blue-400 text-sm px-3 py-1 rounded-full;
+  @apply text-sm px-3 py-1 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300 transition-colors;
 }
-.body {
-  @apply flex flex-1 overflow-hidden;
+.turn-badge--mrx       { @apply bg-red-600/20 text-red-400; }
+.turn-badge--detective { @apply bg-blue-600/20 text-blue-400; }
+.turn-badge--mine      { @apply bg-green-600/20 text-green-400 font-semibold; }
+.double-badge {
+  @apply text-xs px-2 py-1 rounded-full bg-amber-600/20 text-amber-400 font-medium;
 }
+.body { @apply flex flex-1 overflow-hidden; }
 .map-error {
   @apply bg-red-900/20 border-b border-red-700 text-red-400 text-sm px-4 py-2;
 }
