@@ -25,24 +25,24 @@ defineProps<{ log: MrXLogEntry[] }>()
   @apply p-4 border-b border-gray-200 dark:border-gray-800;
 }
 .section-label {
-  @apply text-xs text-gray-500 uppercase tracking-wider mb-3;
+  @apply text-sm text-gray-500 uppercase tracking-wider mb-3;
 }
 .log-empty {
-  @apply text-xs text-gray-600 italic;
+  @apply text-sm text-gray-600 italic;
 }
 .log-row {
-  @apply flex items-center justify-between py-1;
+  @apply flex items-center justify-between py-1.5;
 }
 .log-round {
-  @apply text-xs text-gray-500;
+  @apply text-sm text-gray-500;
 }
 .log-ticket {
-  @apply text-xs font-medium;
+  @apply text-sm font-medium;
 }
 .log-leg {
   @apply text-gray-400 ml-0.5;
 }
 .log-node {
-  @apply text-xs text-gray-500 dark:text-gray-400 font-mono;
+  @apply text-sm text-gray-500 dark:text-gray-400 font-mono;
 }
 </style>

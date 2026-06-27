@@ -14,13 +14,13 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { GraphNode, GraphEdge } from '../../types/game'
+import type { GraphNode, GraphEdge, DemoPlayer } from '../../types/game'
 import { MODE_COLORS, modeLegend } from '../../utils/transportModes'
 
 const props = defineProps<{
   nodes: GraphNode[]
   edges: GraphEdge[]
-  playerNode: number
+  displayPlayers: DemoPlayer[]
   selectedNode: GraphNode | null
   reachableIds?: Set<number>
 }>()
@@ -40,7 +40,7 @@ function modesKey(modes: Set<string>): string {
   return key || 'none'
 }
 
-function makePieIcon(modes: string[], isPlayer = false, isSelected = false): ImageData {
+function makePieIcon(modes: string[], isSelected = false): ImageData {
   const SIZE = 40
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = SIZE
@@ -51,7 +51,7 @@ function makePieIcon(modes: string[], isPlayer = false, isSelected = false): Ima
   if (modes.length === 0) {
     ctx.beginPath()
     ctx.arc(cx, cx, r, 0, Math.PI * 2)
-    ctx.fillStyle = isPlayer ? '#2563eb' : '#1f2937'
+    ctx.fillStyle = '#1f2937'
     ctx.fill()
   } else {
     const step = (Math.PI * 2) / modes.length
@@ -67,11 +67,58 @@ function makePieIcon(modes: string[], isPlayer = false, isSelected = false): Ima
     }
   }
 
-  // Outer ring — blue for player, white for selected, dark otherwise
   ctx.beginPath()
   ctx.arc(cx, cx, r, 0, Math.PI * 2)
-  ctx.strokeStyle = isPlayer ? '#60a5fa' : isSelected ? '#ffffff' : '#111827'
-  ctx.lineWidth = isPlayer || isSelected ? 3 : 2
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = isSelected ? 3 : 2.5
+  ctx.stroke()
+
+  return ctx.getImageData(0, 0, SIZE, SIZE)
+}
+
+// Ring icon for player-occupied nodes — draws colored arc segments per transport
+// mode. The center is transparent so the player-color circle layer shows through.
+function makeOccupiedRingIcon(modes: string[]): ImageData {
+  const SIZE = 40
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = SIZE
+  const ctx = canvas.getContext('2d')!
+  const cx = SIZE / 2
+  const outerR   = SIZE / 2 - 2   // matches the pie icon's outer radius
+  const ringWidth = 5
+  const ringMid   = outerR - ringWidth / 2
+
+  if (modes.length === 0) {
+    ctx.beginPath()
+    ctx.arc(cx, cx, ringMid, 0, Math.PI * 2)
+    ctx.strokeStyle = '#ffffff'
+    ctx.lineWidth = ringWidth
+    ctx.stroke()
+  } else {
+    const step = (Math.PI * 2) / modes.length
+    let angle = -Math.PI / 2
+    for (const mode of modes) {
+      ctx.beginPath()
+      ctx.arc(cx, cx, ringMid, angle, angle + step)
+      ctx.strokeStyle = MODE_COLORS[mode] ?? '#6b7280'
+      ctx.lineWidth = ringWidth
+      ctx.stroke()
+      angle += step
+    }
+  }
+
+  // Separator: thin ring between player fill and mode arcs
+  ctx.beginPath()
+  ctx.arc(cx, cx, outerR - ringWidth, 0, Math.PI * 2)
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 1.5
+  ctx.stroke()
+
+  // Outer border — matches the pie chart node border
+  ctx.beginPath()
+  ctx.arc(cx, cx, outerR, 0, Math.PI * 2)
+  ctx.strokeStyle = '#ffffff'
+  ctx.lineWidth = 2.5
   ctx.stroke()
 
   return ctx.getImageData(0, 0, SIZE, SIZE)
@@ -79,13 +126,13 @@ function makePieIcon(modes: string[], isPlayer = false, isSelected = false): Ima
 
 function registerIcons() {
   if (!map) return
-  // All 16 mode combinations × 3 states (normal / player / selected)
   for (let mask = 0; mask < 16; mask++) {
     const modes = MODE_ORDER.filter((_, i) => mask & (1 << i))
     const key   = modesKey(new Set(modes))
-    map.addImage(`node-${key}`,          makePieIcon(modes))
-    map.addImage(`node-${key}-player`,   makePieIcon(modes, true,  false))
-    map.addImage(`node-${key}-selected`, makePieIcon(modes, false, true))
+    map.addImage(`node-${key}`,           makePieIcon(modes))
+    map.addImage(`node-${key}-selected`,  makePieIcon(modes, true))
+    // Occupied variant: colored ring, transparent fill
+    map.addImage(`node-occupied-${key}`,  makeOccupiedRingIcon(modes))
   }
 }
 
@@ -106,24 +153,28 @@ function nodeModeMap(): Map<number, Set<string>> {
 
 function nodeGeoJSON() {
   const modeMap = nodeModeMap()
+  const myNode  = props.displayPlayers.find(p => p.isYou)?.node ?? 0
   return {
     type: 'FeatureCollection' as const,
     features: props.nodes.map(n => {
       const modes = modeMap.get(n.id) ?? new Set<string>()
       const key   = modesKey(modes)
-      const isPlayer   = n.id === props.playerNode
+      const occupant    = props.displayPlayers.find(p => p.node != null && p.node === n.id)
+      const isPlayer    = !!occupant
+      const playerColor = occupant?.color ?? ''
+      const playerName  = occupant?.name ?? ''
       const isSelected = n.id === props.selectedNode?.id
       const isReachable = !isPlayer && !!(props.reachableIds?.has(n.id) ??
         props.edges.some(
-          e => (e.from === props.playerNode && e.to === n.id) ||
-               (e.to   === props.playerNode && e.from === n.id)
+          e => (e.from === myNode && e.to === n.id) ||
+               (e.to   === myNode && e.from === n.id)
         ))
-      const iconKey = isPlayer ? `node-${key}-player`
+      const iconKey = isPlayer   ? `node-occupied-${key}`
                     : isSelected ? `node-${key}-selected`
                     : `node-${key}`
       return {
         type: 'Feature' as const,
-        properties: { id: n.id, label: n.label, isReachable, isPlayer, iconKey },
+        properties: { id: n.id, label: n.label, isReachable, isPlayer, playerColor, playerName, iconKey },
         geometry: { type: 'Point' as const, coordinates: [n.lng, n.lat] },
       }
     }),
@@ -198,31 +249,16 @@ onMounted(() => {
       },
     })
 
-    // Reachable glow
+    // Player position: solid color fill (behind the ring icon)
     map.addLayer({
-      id: 'nodes-reachable',
-      type: 'circle',
-      source: 'nodes',
-      filter: ['==', ['get', 'isReachable'], true],
-      paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 14, 15, 18, 18, 26],
-        'circle-color': 'rgba(255,255,255,0.06)',
-        'circle-stroke-color': 'rgba(255,255,255,0.3)',
-        'circle-stroke-width': 1.5,
-      },
-    })
-
-    // Player position glow — large solid ring so the occupied node stands out
-    map.addLayer({
-      id: 'nodes-player-glow',
+      id: 'nodes-player-fill',
       type: 'circle',
       source: 'nodes',
       filter: ['==', ['get', 'isPlayer'], true],
       paint: {
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 16, 15, 22, 18, 32],
-        'circle-color': 'rgba(37,99,235,0.18)',
-        'circle-stroke-color': '#3b82f6',
-        'circle-stroke-width': 3,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 12, 10, 15, 13, 18, 19],
+        'circle-color': ['get', 'playerColor'],
+        'circle-opacity': 1,
       },
     })
 
@@ -243,7 +279,7 @@ onMounted(() => {
       },
     })
 
-    // Node ID labels
+    // Node ID labels — shifted down slightly on player nodes to make room for the name
     map.addLayer({
       id: 'node-ids',
       type: 'symbol',
@@ -253,30 +289,33 @@ onMounted(() => {
         'text-size': ['interpolate', ['linear'], ['zoom'], 12, 7, 15, 9, 18, 12],
         'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
         'text-anchor': 'center',
+        'text-offset': ['case', ['boolean', ['get', 'isPlayer'], false],
+          ['literal', [0, 0.55]],
+          ['literal', [0, 0]],
+        ],
         'text-allow-overlap': true,
         'text-ignore-placement': true,
       },
       paint: { 'text-color': '#ffffff' },
     })
 
-    // Node name labels (below)
+    // Player name labels — shown above the node ID inside player nodes
     map.addLayer({
-      id: 'node-labels',
+      id: 'node-player-names',
       type: 'symbol',
       source: 'nodes',
+      filter: ['==', ['get', 'isPlayer'], true],
       layout: {
-        'text-field': ['get', 'label'],
-        'text-size': 9,
-        'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
-        'text-anchor': 'top',
-        'text-offset': [0, 1.2],
-        'text-allow-overlap': false,
+        'text-field': ['get', 'playerName'],
+        'text-size': ['interpolate', ['linear'], ['zoom'], 12, 6, 15, 8, 18, 10],
+        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        'text-anchor': 'center',
+        'text-offset': [0, -0.55],
+        'text-max-width': 5,
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
       },
-      paint: {
-        'text-color': '#9ca3af',
-        'text-halo-color': '#111827',
-        'text-halo-width': 1,
-      },
+      paint: { 'text-color': '#ffffff' },
     })
 
     map.on('click', 'nodes', e => {
@@ -301,7 +340,7 @@ onUnmounted(() => {
 })
 
 watch(
-  [() => props.nodes, () => props.edges, () => props.playerNode, () => props.selectedNode, () => props.reachableIds],
+  [() => props.nodes, () => props.edges, () => props.displayPlayers, () => props.selectedNode, () => props.reachableIds],
   updateSources,
   { deep: true },
 )

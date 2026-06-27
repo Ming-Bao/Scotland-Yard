@@ -23,18 +23,18 @@ defineProps<{ tickets: DemoTicket[] }>()
   @apply p-4 border-b border-gray-200 dark:border-gray-800;
 }
 .section-label {
-  @apply text-xs text-gray-500 uppercase tracking-wider mb-3;
+  @apply text-sm text-gray-500 uppercase tracking-wider mb-3;
 }
 .ticket-grid {
   @apply grid grid-cols-2 gap-2;
 }
 .ticket-pill {
-  @apply flex items-center justify-between bg-gray-200 dark:bg-gray-800 rounded-lg px-3 py-2;
+  @apply flex items-center justify-between bg-gray-200 dark:bg-gray-800 rounded-lg px-3 py-2.5;
 }
 .ticket-name {
-  @apply text-xs font-medium;
+  @apply text-sm font-medium;
 }
 .ticket-count {
-  @apply text-gray-900 dark:text-white text-sm font-mono font-bold;
+  @apply text-gray-900 dark:text-white text-base font-mono font-bold;
 }
 </style>

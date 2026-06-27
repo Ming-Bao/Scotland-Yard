@@ -64,22 +64,22 @@ defineEmits<{
   @apply p-4;
 }
 .section-label {
-  @apply text-xs text-gray-500 uppercase tracking-wider mb-1;
+  @apply text-sm text-gray-500 uppercase tracking-wider mb-1;
 }
 .node-name {
-  @apply text-gray-900 dark:text-white font-medium mb-1;
+  @apply text-gray-900 dark:text-white font-medium text-base mb-1;
 }
 .node-id {
-  @apply text-xs text-gray-500 font-mono mb-3;
+  @apply text-sm text-gray-500 font-mono mb-3;
 }
 .ticket-prompt {
-  @apply text-xs text-gray-500 mb-2;
+  @apply text-sm text-gray-500 mb-2;
 }
 .ticket-buttons {
   @apply flex flex-wrap gap-2 mb-3;
 }
 .ticket-btn {
-  @apply px-3 py-1.5 rounded-lg text-xs font-semibold border bg-transparent
+  @apply px-3 py-2 rounded-lg text-sm font-semibold border bg-transparent
          hover:bg-black/5 dark:hover:bg-white/5 transition-colors;
 }
 .ticket-btn--selected {
@@ -87,15 +87,15 @@ defineEmits<{
 }
 .confirm-btn {
   @apply w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed
-         text-white text-sm font-medium py-2 rounded-lg transition-colors;
+         text-white text-base font-medium py-2.5 rounded-lg transition-colors;
 }
 .move-error-msg {
-  @apply text-xs text-red-500 mb-2;
+  @apply text-sm text-red-500 mb-2;
 }
 .no-connection {
-  @apply text-xs text-gray-600 italic;
+  @apply text-sm text-gray-600 italic;
 }
 .move-hint {
-  @apply text-xs text-gray-600 italic;
+  @apply text-sm text-gray-600 italic;
 }
 </style>

@@ -6,6 +6,9 @@
         <RouterLink to="/" class="back-btn"><ArrowLeft :size="18" /></RouterLink>
         <h1 class="game-title">Scotland Yard</h1>
         <span class="game-subtitle">Wellington Edition</span>
+        <span v-if="store.myRole" class="role-badge" :class="store.myRole === 'MR_X' ? 'role-badge--mrx' : 'role-badge--detective'">
+          {{ store.myRole === 'MR_X' ? 'Mr. X' : 'Detective' }}
+        </span>
       </div>
       <div class="header-right">
         <span class="round-label">
@@ -24,7 +27,7 @@
       <GameMap
         :nodes="nodes"
         :edges="edges"
-        :player-node="myNodeId"
+        :display-players="displayPlayers"
         :selected-node="selectedNode"
         :reachable-ids="reachableNodeIds"
         @select-node="handleSelectNode"
@@ -303,7 +306,12 @@ async function handleLeave() {
 .double-badge {
   @apply text-xs px-2 py-1 rounded-full bg-amber-600/20 text-amber-400 font-medium;
 }
-.body { @apply flex flex-1 overflow-hidden; }
+.role-badge {
+  @apply text-xs font-bold px-2.5 py-1 rounded-full border;
+}
+.role-badge--mrx        { @apply bg-red-950 text-red-400 border-red-800; }
+.role-badge--detective  { @apply bg-blue-950 text-blue-400 border-blue-800; }
+.body { @apply flex flex-1 overflow-hidden flex-col md:flex-row; }
 .map-error {
   @apply bg-red-900/20 border-b border-red-700 text-red-400 text-sm px-4 py-2;
 }

@@ -75,13 +75,16 @@ defineEmits<{
 @variant dark (&:is(.dark *));
 
 .info-panel {
-  @apply w-72 bg-gray-100 dark:bg-gray-900 border-l border-gray-200 dark:border-gray-800 flex flex-col overflow-y-auto shrink-0;
+  @apply w-full h-[42vh] md:w-72 md:h-auto
+         bg-gray-100 dark:bg-gray-900
+         border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-800
+         flex flex-col overflow-y-auto shrink-0;
 }
 .panel-section {
   @apply p-4 border-b border-gray-200 dark:border-gray-800;
 }
 .section-label {
-  @apply text-xs text-gray-500 uppercase tracking-wider mb-3;
+  @apply text-sm text-gray-500 uppercase tracking-wider mb-3;
 }
 .player-row {
   @apply flex items-center justify-between py-1.5;
@@ -90,25 +93,25 @@ defineEmits<{
   @apply flex items-center gap-2;
 }
 .player-dot {
-  @apply w-2.5 h-2.5 rounded-full;
+  @apply w-3 h-3 rounded-full;
 }
 .player-name {
-  @apply text-sm text-gray-900 dark:text-white;
+  @apply text-base text-gray-900 dark:text-white;
 }
 .player-you {
-  @apply text-xs text-gray-500 dark:text-gray-600;
+  @apply text-sm text-gray-500 dark:text-gray-600;
 }
 .player-location {
-  @apply text-xs text-gray-500 font-mono;
+  @apply text-sm text-gray-500 font-mono;
 }
 .waiting-msg {
-  @apply px-4 py-3 text-xs text-gray-500 dark:text-gray-600 italic;
+  @apply px-4 py-3 text-sm text-gray-500 dark:text-gray-600 italic;
 }
 .leave-section {
   @apply p-4 mt-auto border-t border-gray-200 dark:border-gray-800;
 }
 .leave-btn {
   @apply w-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700
-         text-gray-800 dark:text-white text-sm font-medium py-2 rounded-lg transition-colors;
+         text-gray-800 dark:text-white text-base font-medium py-2.5 rounded-lg transition-colors;
 }
 </style>
