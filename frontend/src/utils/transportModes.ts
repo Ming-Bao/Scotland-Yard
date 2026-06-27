@@ -1,9 +1,9 @@
 export const MODE_COLORS: Record<string, string> = {
-  ESCOOTER: '#f59e0b',
+  ESCOOTER: '#22c55e',
   BUS:      '#ef4444',
-  TRAIN:    '#f97316',
+  TRAIN:    '#8b5cf6',
   FERRY:    '#06b6d4',
-  BLACK:    '#a855f7',
+  BLACK:    '#f59e0b',
 }
 
 const MODE_LABELS: Record<string, string> = {
