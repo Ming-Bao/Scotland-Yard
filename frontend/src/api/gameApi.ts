@@ -61,7 +61,7 @@ export async function leaveGame(gameId: string, playerId: string): Promise<void>
 }
 
 export async function getMap(): Promise<MapData> {
-    const res = await fetch('/map.json')
+    const res = await fetch('/test-map.json')
     if (!res.ok) throw new Error('Failed to load map data')
     return res.json()
 }
