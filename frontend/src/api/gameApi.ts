@@ -88,7 +88,7 @@ export async function submitMove(
 }
 
 export async function getMap(): Promise<MapData> {
-    const res = await fetch('/test-map.json');
+    const res = await fetch('/api/map');
     if (!res.ok) throw new Error('Failed to load map data');
     return res.json();
 }

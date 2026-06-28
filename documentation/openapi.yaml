@@ -32,23 +32,24 @@ info:
     **Kick detection** — a client should check on each push whether
     their own `playerId` is still present in `players`. If it is not
     and `phase` is still `LOBBY`, the client was kicked.
-  version: 0.1.6
+  version: 0.1.7
 servers:
   - url: http://localhost:8080
     description: Local development server
 
 paths:
 
-  /map.json:
+  /api/map:
     get:
-      summary: Get the game map
+      summary: Get the active game map
       description: |
-        Returns the pre-computed Wellington graph served as a static file.
-        The frontend fetches this once on game board mount to populate the
-        map view with nodes and edges.
+        Returns the pre-computed Wellington graph currently configured via
+        `game.map-file` in `application.properties`. The backend reads that
+        file from the classpath and streams it as JSON — so swapping the
+        property (e.g. `test-map.json` → `map.json`) changes what both the
+        game engine and the frontend receive without any frontend change.
 
-        No authentication required. The file is served directly from Spring
-        Boot's static resource handler (`src/main/resources/static/map.json`).
+        The frontend fetches this once on game board mount.
       operationId: getMap
       responses:
         '200':
@@ -57,8 +58,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MapData'
-        '404':
-          description: map.json not present in static resources
+        '500':
+          description: Configured map file not found in classpath
 
   /api/games/create:
     post:
